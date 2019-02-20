@@ -52,6 +52,8 @@ module.exports.handleSubmission = async (Axios, event, db, m2m, idUploadGen, idS
 
     logger.debug(`Updated to the Submission API: id ${event.payload.id}, id ${legacyId}`)
   } else {
+    logger.debug(`Event ${event} - update URL`);
+
     if (sub.updated) {
       // only check if exist such field
       const updatedTimestamp = Joi.attempt(sub.updated, Joi.date()).getTime()
