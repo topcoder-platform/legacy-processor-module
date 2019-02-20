@@ -16,7 +16,7 @@ const logger = require('./common/logger')
  * @param {IDGenerator} idSubmissionGen IDGenerator instance of submission
  * @param {Number} timestamp the timestamp
  */
-module.exports.handleSubmission = async (Axios, event, db, m2m, idUploadGen, idSubmissionGen, timestamp) => {
+module.exports.handleSubmission = async (Axios, event, db, m2m, idUploadGen, idSubmissionGen, timestamp, isMM) => {
   // Axios instance to make calls to the Submission API
   const axios = Axios.create({
     baseURL: config.SUBMISSION_API_URL,
@@ -40,7 +40,8 @@ module.exports.handleSubmission = async (Axios, event, db, m2m, idUploadGen, idS
       sub.url,
       sub.type,
       idUploadGen,
-      idSubmissionGen
+      idSubmissionGen,
+      isMM
     )
     const legacyId = _.values(idObject)[0]
     const legacyKey = _.keys(idObject)[0]

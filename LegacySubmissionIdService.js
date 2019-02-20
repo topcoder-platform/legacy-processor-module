@@ -179,13 +179,13 @@ async function addMMSubmission (informix, challengeId, userId, isExample, submis
  * @param {IDGenerator} idUploadGen IDGenerator instance of upload
  * @param {IDGenerator} idSubmissionGen IDGenerator instance of submission
  */
-async function addSubmission (informix, challengeId, userId, phaseId, url, submissionType, idUploadGen, idSubmissionGen) {
+async function addSubmission (informix, challengeId, userId, phaseId, url, submissionType, idUploadGen, idSubmissionGen, isMM) {
   const [resourceId, value, phaseTypeId, challengeTypeId] = await getChallengeProperties(informix, challengeId,
     userId, constant.SUBMISSION_TYPE[submissionType].roleId, phaseId)
   let uploadType = null
   let submissionId = null
   let isAllowMultipleSubmission = value === 'true'
-  if (challengeTypeId === constant.CHALLENGE_TYPE['Studio']) {
+  if (challengeTypeId === constant.CHALLENGE_TYPE['Studio'] || isMM) {
     isAllowMultipleSubmission = true
   }
 
