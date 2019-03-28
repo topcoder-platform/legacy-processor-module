@@ -1,0 +1,19 @@
+{
+  "name": "legacy-processor-module",
+  "version": "1.0.0",
+  "description": "Shared Node modules, which will be used in legacy-processor and mm-processor both",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/topcoder-platform/legacy-processor-module.git"
+  },
+  "author": "Dushyant Bhalgami",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/topcoder-platform/legacy-processor-module/issues"
+  },
+  "homepage": "https://github.com/topcoder-platform/legacy-processor-module#readme"
+}
