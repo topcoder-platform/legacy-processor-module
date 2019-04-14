@@ -27,6 +27,7 @@ class IDGenerator {
 
   /**
    * Get next id
+   * @returns {Number} next id
    */
   async getNextId () {
     const release = await this.mutex.acquire()
@@ -46,6 +47,7 @@ class IDGenerator {
 
   /**
    * Fetch next block from id_sequence
+   * @private
    */
   async getNextBlock () {
     const result = await this.db.query(QUERY_GET_ID_SEQ, { seqName: this.seqName })
@@ -59,6 +61,7 @@ class IDGenerator {
   /**
    * Update id_sequence
    * @param {Number} nextStart next start id
+   * @private
    */
   async updateNextBlock (nextStart) {
     try {
