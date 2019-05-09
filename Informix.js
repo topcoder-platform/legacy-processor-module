@@ -4,19 +4,19 @@
 const _ = require('lodash')
 const Informix = require('informix').Informix
 const logger = require('./common/logger')
-let instances = {}
+
 const paramReg = /@(\w+?)@/ // sql param regex
+
+/**
+ * Main class of InformixService
+ */
 class InformixService {
+  /**
+   * Constructor
+   * @param {Object} opts database options
+   */
   constructor (opts) {
-    let {database, username, password} = opts
-    let key = `${database}-${username}-${password}`
-    // cache instances to avoid create multi instance for same database,username
-    if (instances[key]) {
-      return instances[key]
-    }
     this.db = new Informix(opts)
-    instances[key] = this
-    return this
   }
 
   /**
@@ -71,7 +71,7 @@ class InformixService {
       sql = conn
       conn = this.db
     }
-    let fetchAll = sql.toLowerCase().startsWith('select')
+    let fetchAll = sql.toLowerCase().trimLeft().startsWith('select')
     let cursor = null
     let stmt = null
     let result = null
