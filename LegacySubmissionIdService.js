@@ -15,9 +15,10 @@ const IDGenerator = require('./IdGenerator')
 
 const _ = require('lodash')
 
-const m2m = ((config.AUTH0_CLIENT_ID && config.AUTH0_CLIENT_SECRET) ? m2mAuth(_.pick(config, ['AUTH0_URL',
-  'AUTH0_AUDIENCE', 'TOKEN_CACHE_TIME', 'AUTH0_PROXY_SERVER_URL'
-])) : null)
+// const m2m = ((config.AUTH0_CLIENT_ID && config.AUTH0_CLIENT_SECRET) ? m2mAuth(_.pick(config, ['AUTH0_URL',
+//   'AUTH0_AUDIENCE', 'TOKEN_CACHE_TIME', 'AUTH0_PROXY_SERVER_URL'
+// ])) : null)
+const m2m = m2mAuth(_.pick(config, ['AUTH0_URL', 'AUTH0_AUDIENCE', 'AUTH0_PROXY_SERVER_URL']))
 
 // db informix option
 const dbOpts = {
@@ -302,7 +303,7 @@ async function addSubmission (newSubmissionId, challengeId, userId, phaseId, url
          challengeTypeId: ${challengeTypeId}`)
 
   let patchObject
-  const ctx = informix.createContext()
+  let ctx = informix.createContext()
   try {
     await ctx.begin()
     const audits = {
@@ -404,7 +405,7 @@ async function patchSubmission (submissionId, patchObject) {
 async function updateProvisionalScore (challengeId, userId, phaseId, submissionId, submissionType, reviewScore) {
   logger.debug(`Update provisional score for submission: ${submissionId}`)
 
-  const ctx = informix.createContext()
+  let ctx = informix.createContext()
   try {
     await ctx.begin()
 
@@ -450,7 +451,7 @@ async function updateProvisionalScore (challengeId, userId, phaseId, submissionI
 async function updateFinalScore (challengeId, userId, submissionId, finalScore) {
   logger.debug(`Update final score for submission: ${submissionId}`)
 
-  const ctx = informix.createContext()
+  let ctx = informix.createContext()
   try {
     await ctx.begin()
 
@@ -535,7 +536,14 @@ async function getSubmissionApi () {
   }
 
   if (m2m) {
+    console.log(config.AUTH0_URL)
+    console.log(config.AUTH0_AUDIENCE)
+    console.log(config.AUTH0_PROXY_SERVER_URL)
+    console.log(config.AUTH0_CLIENT_ID)
+    console.log(config.AUTH0_CLIENT_SECRET)
+
     const token = await m2m.getMachineToken(config.AUTH0_CLIENT_ID, config.AUTH0_CLIENT_SECRET)
+    console.log(token)
     options.headers = { 'Authorization': `Bearer ${token}` }
   }
 
