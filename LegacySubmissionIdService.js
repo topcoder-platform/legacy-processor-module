@@ -602,7 +602,7 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
     }
 
     // Update placed
-    await informix.query(ctxF, QUERY_UPDATE_COMP_RESULT_PLACE, { roundId });
+    // await informix.query(ctxF, QUERY_UPDATE_COMP_RESULT_PLACE, { roundId });
 
     await ctxF.commit();
   } catch (e) {
