@@ -1,11 +1,11 @@
 /**
  * The informix service
  */
-const _ = require('lodash')
-const Informix = require('informix').Informix
-const logger = require('./common/logger')
+const _ = require("lodash");
+const Informix = require("informix").Informix;
+const logger = require("./common/logger");
 
-const paramReg = /@(\w+?)@/ // sql param regex
+const paramReg = /@(\w+?)@/; // sql param regex
 
 /**
  * Main class of InformixService
@@ -15,15 +15,16 @@ class InformixService {
    * Constructor
    * @param {Object} opts database options
    */
-  constructor (opts) {
-    this.db = new Informix(opts)
+  constructor(opts) {
+    this.db = new Informix(opts);
+    return this;
   }
 
   /**
    * Create context for informix.
    */
-  createContext () {
-    return this.db.createContext()
+  createContext() {
+    return this.db.createContext();
   }
 
   /**
@@ -33,27 +34,35 @@ class InformixService {
    * @param params the sql params
    * @private
    */
-  _processSql (sql, params) {
-    let template = String(sql)
-    const paramValues = []
+  _processSql(sql, params) {
+    let template = String(sql);
+    const paramValues = [];
     while (true) {
-      let match = paramReg.exec(template)
+      let match = paramReg.exec(template);
       if (!match) {
-        break
+        break;
       }
-      const paramName = match[1]
-      const paramValue = params[paramName]
-      const replace = _.isObject(paramValue) && !_.isUndefined(paramValue.replace)
+      const paramName = match[1];
+      const paramValue = params[paramName];
+      const replace =
+        _.isObject(paramValue) && !_.isUndefined(paramValue.replace);
       if (params.hasOwnProperty(paramName)) {
-        template = template.replace(paramReg, replace ? paramValue.replace : '?')
+        template = template.replace(
+          paramReg,
+          replace ? paramValue.replace : "?"
+        );
       } else {
-        throw new Error(`Not found param name ${paramName} in given params ${JSON.stringify(params)}.`)
+        throw new Error(
+          `Not found param name ${paramName} in given params ${JSON.stringify(
+            params
+          )}.`
+        );
       }
       if (!replace) {
-        paramValues.push(paramValue)
+        paramValues.push(paramValue);
       }
     }
-    return [template, paramValues]
+    return [template, paramValues];
   }
 
   /**
@@ -62,43 +71,48 @@ class InformixService {
    * @param{String} sql the sql
    * @param{Object} params the sql params
    */
-  async query (conn, sql, params) {
+  async query(conn, sql, params) {
     if (_.isString(conn) && _.isUndefined(sql)) {
-      sql = conn
-      conn = this.db
+      sql = conn;
+      conn = this.db;
     } else if (_.isString(conn) && _.isObject(sql) && _.isUndefined(params)) {
-      params = sql
-      sql = conn
-      conn = this.db
+      params = sql;
+      sql = conn;
+      conn = this.db;
     }
-    let fetchAll = sql.toLowerCase().trimLeft().startsWith('select')
-    let cursor = null
-    let stmt = null
-    let result = null
+    let fetchAll = sql
+      .toLowerCase()
+      .trimLeft()
+      .startsWith("select");
+    let cursor = null;
+    let stmt = null;
+    let result = null;
     try {
       if (_.isObject(params)) {
-        const [template, paramValues] = this._processSql(sql, params)
-        logger.debug(`sql template '${template}' with param values [${paramValues.join()}]`)
-        stmt = await conn.prepare(template)
-        cursor = await stmt.exec(paramValues)
+        const [template, paramValues] = this._processSql(sql, params);
+        logger.debug(
+          `sql template '${template}' with param values [${paramValues.join()}]`
+        );
+        stmt = await conn.prepare(template);
+        cursor = await stmt.exec(paramValues);
       } else {
-        cursor = await conn.query(sql)
+        cursor = await conn.query(sql);
       }
       if (fetchAll) {
-        result = await cursor.fetchAll()
+        result = await cursor.fetchAll();
       }
     } catch (e) {
-      throw e
+      throw e;
     } finally {
       if (cursor) {
-        await cursor.close()
+        await cursor.close();
       }
       if (stmt) {
-        await stmt.free()
+        await stmt.free();
       }
     }
-    return result
+    return result;
   }
 }
 
-module.exports = InformixService
+module.exports = InformixService;
