@@ -155,11 +155,11 @@ const QUERY_INSERT_COMP_RESULT = `insert into informixoltp:long_comp_result
 // The query to update point_total and system_point_total in "long_comp_result" table
 const QUERY_UPDATE_COMP_RESULT_SCORE = `update informixoltp:long_comp_result set point_total=@initialScore@, system_point_total=@finalScore@ where round_id=@roundId@ and coder_id=@userId@`;
 
+// The query to get result from "long_comp_result" table ordered by scores
+const QUERY_GET_COMP_RESULT = `select coder_id, placed from informixoltp:long_comp_result where round_id=@roundId@ order by system_point_total desc, point_total desc`;
+
 // The query to update placed in "long_comp_result" table
-const QUERY_UPDATE_COMP_RESULT_PLACE = `update informixoltp:long_comp_result lcr set lcr.placed = 
-  (select lcr_ordered.position from (select coder_id, row_number() over(order by system_point_total desc, point_total desc) as position 
-  FROM informixoltp:long_comp_result where round_id=@roundId@) as lcr_ordered where lcr_ordered.coder_id=lcr.coder_id)
-  where lcr.round_id=@roundId@`;
+const QUERY_UPDATE_COMP_RESULT_PLACE = `update informixoltp:long_comp_result lcr set lcr.placed = @placed@ where round_id=@roundId@ and coder_id=@userId@`;
 
 /**
  * Get resourceId, isAllowMultipleSubmission, phaseTypeId and challengeTypeId
@@ -602,7 +602,13 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
     }
 
     // Update placed
-    // await informix.query(ctxF, QUERY_UPDATE_COMP_RESULT_PLACE, { roundId });
+    result = await informix.query(ctxF, QUERY_GET_COMP_RESULT, params);
+    for (let i = 1; i <= result.length; i++) {
+      const r = result[i - 1];
+      if (i !== r[1]) {
+        await informix.query(ctxF, QUERY_UPDATE_COMP_RESULT_PLACE, { placed: i, roundId, userId: r[0]});
+      }
+    }
 
     await ctxF.commit();
   } catch (e) {
@@ -666,7 +672,7 @@ async function getSubmissionApi() {
     timeout: config.SUBMISSION_TIMEOUT
   };
 
-  if (m2m) {
+  if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'development') { // For test/development will use mock api, no need m2m token
     const token = await m2m.getMachineToken(
       config.AUTH0_CLIENT_ID,
       config.AUTH0_CLIENT_SECRET
