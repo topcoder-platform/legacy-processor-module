@@ -193,6 +193,18 @@ const events = {
   // Sample mm submission
   'mm-submission2': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMMessage2) } },
 
+  // Sample update mm submission url message
+  'update-mm-url': { topic: config.KAFKA_UPDATE_SUBMISSION_TOPIC,
+    message: {
+      value: JSON.stringify(_.merge({}, sampleMMMessage, {
+        topic: config.KAFKA_UPDATE_SUBMISSION_TOPIC,
+        payload: {
+          url: 'http://content.topcoder.com/some/path/updated'
+        }
+      }))
+    }
+  },
+
   // Sample mm provisional score
   'mm-provisional-score': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMReviewProvisionalMessage) } },
   // Sample mm provisional score

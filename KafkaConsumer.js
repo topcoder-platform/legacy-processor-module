@@ -43,28 +43,35 @@ const consumer = new Kafka.GroupConsumer(getKafkaOptions());
  */
 const handleMessages = (messageSet, topic, partition, submissionService) =>
   Promise.each(messageSet, m => {
-    const message = m.message.value.toString("utf8");
+    const message = m.message.value ? m.message.value.toString("utf8") : null;
+    const messageInfo = `Topic: ${topic}; Partition: ${partition}; Offset: ${m.offset}; Message: ${message}.`
+    logger.info(`Handle Kafka event message; ${messageInfo}`);
 
-    logger.info(
-      `Handle Kafka event message; Topic: ${topic}; Partition: ${partition}; Offset: ${
-        m.offset
-      }; Message: ${message}.`
-    );
+    if (!message) {
+      logger.error('Skipped null or empty event')
+      return
+    }
 
     let messageJSON;
     try {
       messageJSON = JSON.parse(message);
     } catch (e) {
-      logger.error("Invalid message JSON.");
+      logger.error("Skipped Invalid message JSON");
       logger.error(e);
       // ignore the message
       return;
     }
+
+    if (!messageJSON) {
+      logger.error('Skipped null or empty event')
+      return
+    }
+
     if (messageJSON.topic !== topic) {
       logger.error(
-        `The message topic ${
+        `Skipped the message topic "${
           messageJSON.topic
-        } doesn't match the Kafka topic ${topic}.`
+        }" doesn't match the Kafka topic ${topic}.`
       );
       // ignore the message
       return;
@@ -74,7 +81,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
       .handle(messageJSON)
       .then(() => consumer.commitOffset({ topic, partition, offset: m.offset }))
       .catch(err => {
-        logger.error(err);
+        logger.error(`Failed to handle ${messageInfo}: ${err.message}`)
         logger.error(util.inspect(err));
       });
   });
