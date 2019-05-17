@@ -89,10 +89,11 @@ const QUERY_UPDATE_UPLOAD = `update upload set url = @url@ where
 
 // The query to get MM challenge properties
 const QUERY_GET_MMCHALLENGE_PROPERTIES = `
-  select rc.round_id, rc.component_id, lcs.long_component_state_id, NVL(lcs.submission_number,0) as submission_number, NVL(lcs.points,0) as points
+  select rc.round_id, rc.component_id, lcs.long_component_state_id, NVL(lcs.submission_number,0) as submission_number, NVL(lcs.points,0) as points, r.rated_ind
   from project p
   join project_info pi56 on p.project_id = @challengeId@ and p.project_id = pi56.project_id and pi56.project_info_type_id = 56 and p.project_category_id=37 
   join informixoltp:round_component rc on rc.round_id =pi56.value
+  join informixoltp:round r on rc.round_id=r.round_id
   left join informixoltp:long_component_state lcs on lcs.coder_id=@userId@ and lcs.round_id = rc.round_id and lcs.component_id = rc.component_id`;
 
 // The query to get from "round_registration" table
@@ -147,13 +148,17 @@ const QUERY_UPDATE_SUBMISSION_FINAL_REVIEW_SCORE = `update submission set final_
 // The query to check where user result exists in "long_comp_result" table
 const QUERY_CHECK_COMP_RESULT_EXISTS = `select count(*) from informixoltp:long_comp_result where round_id=@roundId@ and coder_id=@userId@`;
 
+// The query to get user's last entry from "long_comp_result" table
+const QUERY_GET_LAST_COMP_RESULT = `select first 1 new_rating, new_vol from informixoltp:long_comp_result where round_id < @roundId@ and coder_id=@userId@ and rated_ind = 1 order by round_id desc`;
+
 // The query to insert into "long_comp_result" table
 const QUERY_INSERT_COMP_RESULT = `insert into informixoltp:long_comp_result
   (round_id, coder_id, point_total, attended, placed, system_point_total, old_rating, new_rating, old_vol, new_vol, rated_ind, advanced)
-  values(@roundId@, @userId@, @initialScore@, 'N', 0, @finalScore@, null, null, null, null, 1, 'N')`;
+  values(@roundId@, @userId@, @initialScore@, 'N', 0, @finalScore@, @oldRating@, null, @oldVol@, null, @ratedInd@, 'N')`;
 
 // The query to update point_total and system_point_total in "long_comp_result" table
-const QUERY_UPDATE_COMP_RESULT_SCORE = `update informixoltp:long_comp_result set point_total=@initialScore@, system_point_total=@finalScore@ where round_id=@roundId@ and coder_id=@userId@`;
+const QUERY_UPDATE_COMP_RESULT_SCORE = `update informixoltp:long_comp_result
+  set point_total=@initialScore@, system_point_total=@finalScore@, old_rating=@oldRating@, old_vol=@oldVol@, rated_ind=@ratedInd@ where round_id=@roundId@ and coder_id=@userId@`;
 
 // The query to get result from "long_comp_result" table ordered by scores
 const QUERY_GET_COMP_RESULT = `select coder_id, placed from informixoltp:long_comp_result where round_id=@roundId@ order by system_point_total desc, point_total desc`;
@@ -200,7 +205,7 @@ async function getChallengeProperties(
  * @param {Context} ctx informix db context
  * @param {Number} challengeId challenge id
  * @param {Number} userId user id
- * @returns {Array} [roundId, componentId, componentStateId, numSubmissions, points]
+ * @returns {Array} [roundId, componentId, componentStateId, numSubmissions, points, ratedInd]
  */
 async function getMMChallengeProperties(ctx, challengeId, userId) {
   const result = await informix.query(ctx, QUERY_GET_MMCHALLENGE_PROPERTIES, {
@@ -261,7 +266,7 @@ async function addMMSubmission(ctx, challengeId, userId, submissionTime) {
     );
   }
 
-  if (_.isNumber(componentStateId) && !_.isNaN(componentStateId)) {
+  if (_.isFinite(componentStateId)) {
     // Increment submission_number by 1
     numSubmissions++;
     logger.debug(
@@ -557,7 +562,7 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
     await ctxF.begin();
 
     // Query roundId
-    const [roundId] = await getMMChallengeProperties(ctxF, challengeId, userId);
+    let [roundId, , , , , ratedInd] = await getMMChallengeProperties(ctxF, challengeId, userId);
     if (!roundId) {
       throw new Error(
         `MM round not found, challengeId: ${challengeId}, userId: ${userId}`
@@ -586,7 +591,25 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
     });
     const [resultExists] = result[0];
 
-    const params = { roundId, userId, initialScore, finalScore };
+    ratedInd = ratedInd ? 1 : 0;
+    const params = { roundId, userId, initialScore, finalScore, ratedInd };
+
+    let userLastCompResult;
+    if (ratedInd) {
+      // Find user's last entry from informixoltp:long_comp_result
+      const userLastCompResultArr = await informix.query(ctxF, QUERY_GET_LAST_COMP_RESULT, params);
+      if (_.isArray(userLastCompResultArr) && userLastCompResultArr.length) {
+        userLastCompResult = userLastCompResultArr[0]
+      }
+    }
+    if (userLastCompResult) {
+      params.oldRating = _.isFinite(userLastCompResult[0]) ? userLastCompResult[0] : { replace: 'null' };
+      params.oldVol = _.isFinite(userLastCompResult[1]) ? userLastCompResult[1] : { replace: 'null' };
+    } else {
+      params.oldRating = { replace: 'null' };
+      params.oldVol = { replace: 'null' };
+    }
+
     if (resultExists) {
       // Update the long_comp_result table
       logger.debug(
