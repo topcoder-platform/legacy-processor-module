@@ -66,5 +66,6 @@ async function clearSubmissions () {
 module.exports = {
   sleep,
   expectTable,
-  clearSubmissions
+  clearSubmissions,
+  informix
 }
