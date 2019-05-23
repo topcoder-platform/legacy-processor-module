@@ -164,7 +164,7 @@ const QUERY_UPDATE_COMP_RESULT_SCORE = `update informixoltp:long_comp_result
 const QUERY_GET_COMP_RESULT = `select coder_id, placed from informixoltp:long_comp_result where round_id=@roundId@ order by system_point_total desc, point_total desc`;
 
 // The query to update placed in "long_comp_result" table
-const QUERY_UPDATE_COMP_RESULT_PLACE = `update informixoltp:long_comp_result lcr set lcr.placed = @placed@ where round_id=@roundId@ and coder_id=@userId@`;
+const QUERY_UPDATE_COMP_RESULT_PLACE = `update informixoltp:long_comp_result set placed = @placed@ where round_id=@roundId@ and coder_id=@userId@`;
 
 /**
  * Get resourceId, isAllowMultipleSubmission, phaseTypeId and challengeTypeId
@@ -212,9 +212,11 @@ async function getMMChallengeProperties(ctx, challengeId, userId) {
     challengeId,
     userId
   });
+
   logger.debug(
     `MM Challenge properties for: ${challengeId} are: ${JSON.stringify(result)}`
   );
+
   if (!_.isArray(result) || _.isEmpty(result)) {
     throw new Error(
       `null or empty result get mm challenge properties for : challenge id ${challengeId}, user id ${userId}`
@@ -562,7 +564,11 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
     await ctxF.begin();
 
     // Query roundId
-    let [roundId, , , , , ratedInd] = await getMMChallengeProperties(ctxF, challengeId, userId);
+    let [roundId, , , , , ratedInd] = await getMMChallengeProperties(
+      ctxF,
+      challengeId,
+      userId
+    );
     if (!roundId) {
       throw new Error(
         `MM round not found, challengeId: ${challengeId}, userId: ${userId}`
@@ -596,18 +602,32 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
 
     let userLastCompResult;
     if (ratedInd) {
+      logger.debug("Rated Match - Get previous Rating and Vol");
+
       // Find user's last entry from informixoltp:long_comp_result
-      const userLastCompResultArr = await informix.query(ctxF, QUERY_GET_LAST_COMP_RESULT, params);
+      const userLastCompResultArr = await informix.query(
+        ctxF,
+        QUERY_GET_LAST_COMP_RESULT,
+        params
+      );
+
       if (_.isArray(userLastCompResultArr) && userLastCompResultArr.length) {
-        userLastCompResult = userLastCompResultArr[0]
+        userLastCompResult = userLastCompResultArr[0];
       }
+
+      logger.debug(`Old Rating and Vol values ${userLastCompResult}`);
     }
+
     if (userLastCompResult) {
-      params.oldRating = _.isFinite(userLastCompResult[0]) ? userLastCompResult[0] : { replace: 'null' };
-      params.oldVol = _.isFinite(userLastCompResult[1]) ? userLastCompResult[1] : { replace: 'null' };
+      params.oldRating = _.isFinite(userLastCompResult[0])
+        ? userLastCompResult[0]
+        : { replace: "null" };
+      params.oldVol = _.isFinite(userLastCompResult[1])
+        ? userLastCompResult[1]
+        : { replace: "null" };
     } else {
-      params.oldRating = { replace: 'null' };
-      params.oldVol = { replace: 'null' };
+      params.oldRating = { replace: "null" };
+      params.oldVol = { replace: "null" };
     }
 
     if (resultExists) {
@@ -629,7 +649,11 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
     for (let i = 1; i <= result.length; i++) {
       const r = result[i - 1];
       if (i !== r[1]) {
-        await informix.query(ctxF, QUERY_UPDATE_COMP_RESULT_PLACE, { placed: i, roundId, userId: r[0]});
+        await informix.query(ctxF, QUERY_UPDATE_COMP_RESULT_PLACE, {
+          placed: i,
+          roundId,
+          userId: r[0]
+        });
       }
     }
 
@@ -695,7 +719,11 @@ async function getSubmissionApi() {
     timeout: config.SUBMISSION_TIMEOUT
   };
 
-  if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'development') { // For test/development will use mock api, no need m2m token
+  if (
+    process.env.NODE_ENV !== "test" &&
+    process.env.NODE_ENV !== "development"
+  ) {
+    // For test/development will use mock api, no need m2m token
     const token = await m2m.getMachineToken(
       config.AUTH0_CLIENT_ID,
       config.AUTH0_CLIENT_SECRET
