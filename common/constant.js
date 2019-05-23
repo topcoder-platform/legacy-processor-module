@@ -35,7 +35,12 @@ const CHALLENGE_TYPE = {
 
 const COMPONENT_STATE = {
   // could add more from https://github.com/appirio-tech/tc1-tcnode/blob/master/tc-common/src/main/java/com/topcoder/web/common/model/algo/ComponentState.java
+  ACTIVE: 100,
   NOT_CHALLENGED: 130 // Submitted
+}
+
+const LANGUAGE = {
+  OTHERS: 9
 }
 
 module.exports = {
@@ -45,5 +50,6 @@ module.exports = {
   UPLOAD_STATUS,
   PHASE_TYPE,
   CHALLENGE_TYPE,
-  COMPONENT_STATE
+  COMPONENT_STATE,
+  LANGUAGE
 }
