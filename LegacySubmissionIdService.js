@@ -800,14 +800,14 @@ async function getSubTrack(challengeId) {
       config.AUTH0_CLIENT_SECRET
     );
 
-    const config = {
+    const options = {
       headers: { Authorization: `Bearer ${token}` }
     };
 
     // attempt to fetch the subtrack
     const result = await Axios.get(
       config.CHALLENGE_INFO_API.replace("{cid}", challengeId),
-      config
+      options
     );
 
     // use _.get to avoid access with undefined object
