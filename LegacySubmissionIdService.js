@@ -795,10 +795,21 @@ async function getSubmission(submissionId) {
  */
 async function getSubTrack(challengeId) {
   try {
+    const token = await m2m.getMachineToken(
+      config.AUTH0_CLIENT_ID,
+      config.AUTH0_CLIENT_SECRET
+    );
+
+    const config = {
+      headers: { Authorization: `Bearer ${token}` }
+    };
+
     // attempt to fetch the subtrack
     const result = await Axios.get(
-      config.CHALLENGE_INFO_API.replace("{cid}", challengeId)
+      config.CHALLENGE_INFO_API.replace("{cid}", challengeId),
+      config
     );
+
     // use _.get to avoid access with undefined object
     return _.get(result.data, "result.content[0].subTrack");
   } catch (err) {
