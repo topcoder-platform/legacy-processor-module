@@ -359,10 +359,9 @@ async function addSubmission(
     isAllowMultipleSubmission = true;
   }
 
-  let uploadId = await idUploadGen.getNextId();
+  const uploadId = await idUploadGen.getNextId();
 
   logger.info(`uploadId = ${uploadId}`);
-
 
   if (phaseTypeId === constant.PHASE_TYPE["Final Fix"]) {
     uploadType = constant.UPLOAD_TYPE["Final Fix"];
