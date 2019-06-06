@@ -6,6 +6,7 @@ const Informix = require("informix").Informix;
 const logger = require("./common/logger");
 
 const paramReg = /@(\w+?)@/; // sql param regex
+let instances = {};
 
 /**
  * Main class of InformixService
@@ -15,9 +16,16 @@ class InformixService {
    * Constructor
    * @param {Object} opts database options
    */
-  constructor(opts) {
-    this.db = new Informix(opts);
-    return this;
+  constructor (opts) {
+    let {database, username, password} = opts
+    let key = `${database}-${username}-${password}`
+    // cache instances to avoid create multi instance for same database,username
+    if (instances[key]) {
+      return instances[key]
+    }
+    this.db = new Informix(opts)
+    instances[key] = this
+    return this
   }
 
   /**

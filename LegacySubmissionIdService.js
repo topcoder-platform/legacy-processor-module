@@ -32,10 +32,10 @@ const dbOpts = {
 
 let informix = new Informix(dbOpts);
 
-const informixGen = new Informix(dbOpts);
-const idUploadGen = new IDGenerator(informixGen, config.ID_SEQ_UPLOAD);
-const idSubmissionGen = new IDGenerator(informixGen, config.ID_SEQ_SUBMISSION);
-const componentStateGen = new IDGenerator(
+let informixGen = new Informix(dbOpts);
+let idUploadGen = new IDGenerator(informixGen, config.ID_SEQ_UPLOAD);
+let idSubmissionGen = new IDGenerator(informixGen, config.ID_SEQ_SUBMISSION);
+let componentStateGen = new IDGenerator(
   informixGen,
   config.ID_SEQ_COMPONENT_STATE
 );
@@ -359,7 +359,11 @@ async function addSubmission(
     isAllowMultipleSubmission = true;
   }
 
-  const uploadId = await idUploadGen.getNextId();
+  let uploadId = await idUploadGen.getNextId();
+
+  logger.info(`uploadId = ${uploadId}`);
+
+
   if (phaseTypeId === constant.PHASE_TYPE["Final Fix"]) {
     uploadType = constant.UPLOAD_TYPE["Final Fix"];
   } else {
@@ -367,7 +371,7 @@ async function addSubmission(
     uploadType = constant.UPLOAD_TYPE["Submission"];
   }
 
-  logger.debug(`add challenge submission for resourceId: ${resourceId}
+  logger.info(`add challenge submission for resourceId: ${resourceId}
          uploadId: ${uploadId}
          submissionId: ${submissionId}
          allow multiple submission: ${isAllowMultipleSubmission}
@@ -491,7 +495,7 @@ async function updateProvisionalScore(
   logger.debug(`Update provisional score for submission: ${submissionId}`);
 
   informix = new Informix(dbOpts);
-  const ctx = informix.createContext();
+  let ctx = informix.createContext();
   try {
     await ctx.begin();
 
@@ -559,7 +563,7 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
   logger.debug(`Update final score for submission: ${submissionId}`);
 
   informix = new Informix(dbOpts);
-  const ctxF = informix.createContext();
+  let ctxF = informix.createContext();
   try {
     await ctxF.begin();
 
