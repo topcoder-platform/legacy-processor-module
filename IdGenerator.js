@@ -52,14 +52,19 @@ class IDGenerator {
    * @private
    */
   async getNextBlock() {
-    const result = await this.db.query(QUERY_GET_ID_SEQ, {
-      seqName: this.seqName
-    });
-    if (!_.isArray(result) || _.isEmpty(result)) {
-      throw new Error(`null or empty result for ${this.seqName}`);
+    try {
+      const result = await this.db.query(QUERY_GET_ID_SEQ, {
+        seqName: this.seqName
+      });
+      if (!_.isArray(result) || _.isEmpty(result)) {
+        throw new Error(`null or empty result for ${this.seqName}`);
+      }
+      this._nextId = --result[0][0];
+      this._availableId = result[0][1];
+    } catch (e) {
+      logger.error("Failed to get id sequence: " + this.seqName);
+      logger.error(util.inspect(e));
     }
-    this._nextId = --result[0][0];
-    this._availableId = result[0][1];
   }
 
   /**
