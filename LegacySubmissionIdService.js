@@ -235,87 +235,95 @@ async function getMMChallengeProperties(ctx, challengeId, userId) {
  * @private
  */
 async function addMMSubmission(ctx, challengeId, userId, submissionTime) {
-  let [
-    roundId,
-    componentId,
-    componentStateId,
-    numSubmissions,
-    points
-  ] = await getMMChallengeProperties(ctx, challengeId, userId);
-  logger.debug(`get mm challenge properties roundId: ${roundId} componentId: ${componentId} 
-   componentStateId: ${componentStateId} numSubmissions: ${numSubmissions} points: ${points}`);
-
-  const rrResult = await informix.query(ctx, QUERY_GET_MM_ROUND_REGISTRATION, {
-    roundId,
-    userId
-  });
-  if (_.isEmpty(rrResult)) {
-    // Add entry in informixoltp:round_registration
-    const rrParams = {
-      roundId,
-      userId,
-      timestamp: { replace: "current" },
-      eligible: 1,
-      teamId: { replace: "null" }
-    };
-    logger.debug(
-      `insert round_registration with params : ${JSON.stringify(rrParams)}`
-    );
-    await informix.query(ctx, QUERY_INSERT_MM_ROUND_REGISTRATION, rrParams);
-  } else {
-    logger.debug(
-      `round_registration already exists, roundId: ${roundId}, userId: ${userId}`
-    );
-  }
-
-  if (_.isFinite(componentStateId)) {
-    // Increment submission_number by 1
-    numSubmissions++;
-    logger.debug(
-      `increment long_component_state#submission_number by 1, componentStateId: ${componentStateId}, numSubmissions: ${numSubmissions}`
-    );
-    await informix.query(
-      ctx,
-      QUERY_UPDATE_LONG_COMPONENT_STATE_NUN_SUBMISSIONS,
-      { componentStateId, numSubmissions }
-    );
-  } else {
-    numSubmissions = 1;
-    componentStateId = await componentStateGen.getNextId();
-    // Add entry in informixoltp:long_component_state
-    const lcsParams = {
-      componentStateId,
+  try {
+    let [
       roundId,
       componentId,
-      userId,
-      points: 0,
-      statusId: constant.COMPONENT_STATE.ACTIVE,
+      componentStateId,
       numSubmissions,
-      numExampleSubmissions: 0
+      points
+    ] = await getMMChallengeProperties(ctx, challengeId, userId);
+    logger.debug(`get mm challenge properties roundId: ${roundId} componentId: ${componentId} 
+     componentStateId: ${componentStateId} numSubmissions: ${numSubmissions} points: ${points}`);
+
+    const rrResult = await informix.query(
+      ctx,
+      QUERY_GET_MM_ROUND_REGISTRATION,
+      {
+        roundId,
+        userId
+      }
+    );
+    if (_.isEmpty(rrResult)) {
+      // Add entry in informixoltp:round_registration
+      const rrParams = {
+        roundId,
+        userId,
+        timestamp: { replace: "current" },
+        eligible: 1,
+        teamId: { replace: "null" }
+      };
+      logger.debug(
+        `insert round_registration with params : ${JSON.stringify(rrParams)}`
+      );
+      await informix.query(ctx, QUERY_INSERT_MM_ROUND_REGISTRATION, rrParams);
+    } else {
+      logger.debug(
+        `round_registration already exists, roundId: ${roundId}, userId: ${userId}`
+      );
+    }
+
+    if (_.isFinite(componentStateId)) {
+      // Increment submission_number by 1
+      numSubmissions++;
+      logger.debug(
+        `increment long_component_state#submission_number by 1, componentStateId: ${componentStateId}, numSubmissions: ${numSubmissions}`
+      );
+      await informix.query(
+        ctx,
+        QUERY_UPDATE_LONG_COMPONENT_STATE_NUN_SUBMISSIONS,
+        { componentStateId, numSubmissions }
+      );
+    } else {
+      numSubmissions = 1;
+      componentStateId = await componentStateGen.getNextId();
+      // Add entry in informixoltp:long_component_state
+      const lcsParams = {
+        componentStateId,
+        roundId,
+        componentId,
+        userId,
+        points: 0,
+        statusId: constant.COMPONENT_STATE.ACTIVE,
+        numSubmissions,
+        numExampleSubmissions: 0
+      };
+
+      logger.debug(
+        `insert long_component_state with params : ${JSON.stringify(lcsParams)}`
+      );
+      await informix.query(ctx, QUERY_INSERT_LONG_COMPONENT_STATE, lcsParams);
+    }
+
+    // Add entry in informixoltp:long_submission
+    const lsParams = {
+      componentStateId,
+      numSubmissions,
+      submissionText: { replace: "null" },
+      openTime: submissionTime,
+      submitTime: submissionTime,
+      submissionPoints: points,
+      languageId: constant.LANGUAGE.OTHERS,
+      isExample: 0
     };
 
     logger.debug(
-      `insert long_component_state with params : ${JSON.stringify(lcsParams)}`
+      `insert long_submission with params : ${JSON.stringify(lsParams)}`
     );
-    await informix.query(ctx, QUERY_INSERT_LONG_COMPONENT_STATE, lcsParams);
+    await informix.query(ctx, QUERY_INSERT_LONG_SUBMISSION, lsParams);
+  } catch (e) {
+    throw e;
   }
-
-  // Add entry in informixoltp:long_submission
-  const lsParams = {
-    componentStateId,
-    numSubmissions,
-    submissionText: { replace: "null" },
-    openTime: submissionTime,
-    submitTime: submissionTime,
-    submissionPoints: points,
-    languageId: constant.LANGUAGE.OTHERS,
-    isExample: 0
-  };
-
-  logger.debug(
-    `insert long_submission with params : ${JSON.stringify(lsParams)}`
-  );
-  await informix.query(ctx, QUERY_INSERT_LONG_SUBMISSION, lsParams);
 }
 
 /**
@@ -341,47 +349,48 @@ async function addSubmission(
   submissionTime,
   isMM
 ) {
-  const [
-    resourceId,
-    value,
-    phaseTypeId,
-    challengeTypeId
-  ] = await getChallengeProperties(
-    challengeId,
-    userId,
-    constant.SUBMISSION_TYPE[submissionType].roleId,
-    phaseId
-  );
-  let uploadType = null;
-  let submissionId = null;
-  let isAllowMultipleSubmission = value === "true";
-  if (challengeTypeId === constant.CHALLENGE_TYPE["Studio"] || isMM) {
-    isAllowMultipleSubmission = true;
-  }
+  try {
+    const [
+      resourceId,
+      value,
+      phaseTypeId,
+      challengeTypeId
+    ] = await getChallengeProperties(
+      challengeId,
+      userId,
+      constant.SUBMISSION_TYPE[submissionType].roleId,
+      phaseId
+    );
+    let uploadType = null;
+    let submissionId = null;
+    let isAllowMultipleSubmission = value === "true";
+    if (challengeTypeId === constant.CHALLENGE_TYPE["Studio"] || isMM) {
+      isAllowMultipleSubmission = true;
+    }
 
-  const uploadId = await idUploadGen.getNextId();
+    const uploadId = await idUploadGen.getNextId();
 
-  logger.info(`uploadId = ${uploadId}`);
+    logger.info(`uploadId = ${uploadId}`);
 
-  if (phaseTypeId === constant.PHASE_TYPE["Final Fix"]) {
-    uploadType = constant.UPLOAD_TYPE["Final Fix"];
-  } else {
-    submissionId = await idSubmissionGen.getNextId();
-    uploadType = constant.UPLOAD_TYPE["Submission"];
-  }
+    if (phaseTypeId === constant.PHASE_TYPE["Final Fix"]) {
+      uploadType = constant.UPLOAD_TYPE["Final Fix"];
+    } else {
+      submissionId = await idSubmissionGen.getNextId();
+      uploadType = constant.UPLOAD_TYPE["Submission"];
+    }
 
-  logger.info(`add challenge submission for resourceId: ${resourceId}
+    logger.info(`add challenge submission for resourceId: ${resourceId}
          uploadId: ${uploadId}
          submissionId: ${submissionId}
          allow multiple submission: ${isAllowMultipleSubmission}
          uploadType: ${uploadType}
          challengeTypeId: ${challengeTypeId}`);
 
-  let patchObject;
+    let patchObject;
 
-  informix = new Informix(dbOpts);
-  let ctx = informix.createContext();
-  try {
+    informix = new Informix(dbOpts);
+    let ctx = informix.createContext();
+
     await ctx.begin();
     const audits = {
       createUser: userId,
@@ -441,7 +450,6 @@ async function addSubmission(
       }
       patchObject = { legacySubmissionId: submissionId };
     }
-
     await ctx.commit();
   } catch (e) {
     await ctx.rollback();
