@@ -58,7 +58,7 @@ class IDGenerator {
    */
   async getNextBlock() {
     try {
-      logger.debug(`inside getNextBlock`);
+      logger.debug(`inside getNextBlock = ${this.db}`);
       const result = await this.db.query(QUERY_GET_ID_SEQ, {
         seqName: this.seqName
       });
