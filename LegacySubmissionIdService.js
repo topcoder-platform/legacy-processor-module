@@ -285,8 +285,10 @@ async function addMMSubmission(ctx, challengeId, userId, submissionTime) {
         { componentStateId, numSubmissions }
       );
     } else {
+      logger.debug("component_state_id is not present");
       numSubmissions = 1;
       componentStateId = await componentStateGen.getNextId();
+      logger.debug(`component_state_id = ${componentStateId}`);
       // Add entry in informixoltp:long_component_state
       const lcsParams = {
         componentStateId,
