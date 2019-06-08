@@ -34,11 +34,16 @@ class IDGenerator {
   async getNextId() {
     const release = await this.mutex.acquire();
     try {
+      logger.debug("Getting nextId");
       --this._availableId;
+      logger.debug(`this._availableId = ${this._availableId}`);
+
       if (this._availableId <= 0) {
         await this.getNextBlock();
         await this.updateNextBlock(this._nextId + this._availableId + 1);
       }
+
+      logger.debug(`this._availableId = ${this._nextId}`);
       return ++this._nextId;
     } catch (e) {
       throw e;
@@ -53,14 +58,20 @@ class IDGenerator {
    */
   async getNextBlock() {
     try {
+      logger.debug(`inside getNextBlock`);
       const result = await this.db.query(QUERY_GET_ID_SEQ, {
         seqName: this.seqName
       });
+
+      logger.debug(`getNextBlock = ${result}`);
+      
       if (!_.isArray(result) || _.isEmpty(result)) {
         throw new Error(`null or empty result for ${this.seqName}`);
       }
       this._nextId = --result[0][0];
+      logger.debug(`getNextBlock = ${ this._nextId}`);
       this._availableId = result[0][1];
+      logger.debug(`getNextBlock = ${this._availableId}`);
     } catch (e) {
       logger.error("Failed to get id sequence: " + this.seqName);
       logger.error(util.inspect(e));
