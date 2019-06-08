@@ -5,11 +5,23 @@ const logger = require("./common/logger");
 const util = require("util");
 const _ = require("lodash");
 const Mutex = require("async-mutex").Mutex;
+const Informix = require("./Informix");
 
 const QUERY_GET_ID_SEQ =
   "select next_block_start, block_size from id_sequences where name = @seqName@";
 const QUERY_UPDATE_ID_SEQ =
   "update id_sequences set next_block_start = @nextStart@ where name = @seqName@";
+
+// db informix option
+const dbOpts = {
+  database: config.DB_NAME,
+  username: config.DB_USERNAME,
+  password: config.DB_PASSWORD,
+  pool: {
+    min: 0,
+    max: 10
+  }
+};
 
 /**
  * Main class of IDGenerator
@@ -58,8 +70,10 @@ class IDGenerator {
    */
   async getNextBlock() {
     try {
+      let informix = new Informix(dbOpts);
+
       logger.debug(`inside getNextBlock = ${this.db}`);
-      const result = await this.db.query(QUERY_GET_ID_SEQ, {
+      const result = await informix.query(QUERY_GET_ID_SEQ, {
         seqName: this.seqName
       });
 
@@ -85,7 +99,9 @@ class IDGenerator {
    */
   async updateNextBlock(nextStart) {
     try {
-      await this.db.query(QUERY_UPDATE_ID_SEQ, {
+      let informix = new Informix(dbOpts);
+
+      await informix.query(QUERY_UPDATE_ID_SEQ, {
         seqName: this.seqName,
         nextStart
       });
