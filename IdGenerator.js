@@ -4,6 +4,7 @@
 const logger = require("./common/logger");
 const util = require("util");
 const _ = require("lodash");
+const config = require("config");
 const Mutex = require("async-mutex").Mutex;
 const Informix = require("./Informix");
 
