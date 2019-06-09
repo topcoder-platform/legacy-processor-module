@@ -384,7 +384,8 @@ async function addSubmission(
   submissionTime,
   isMM
 ) {
-  let ctx;
+  informix = new Informix(dbOpts);
+  let ctx = informix.createContext();
 
   try {
     const [
@@ -427,8 +428,7 @@ async function addSubmission(
 
     let patchObject;
 
-    informix = new Informix(dbOpts);
-    ctx = informix.createContext();
+    
 
     await ctx.begin();
     const audits = {
