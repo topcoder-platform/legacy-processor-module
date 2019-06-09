@@ -84,7 +84,7 @@ class IDGenerator {
         throw new Error(`null or empty result for ${this.seqName}`);
       }
       this._nextId = --result[0][0];
-      logger.debug(`getNextBlock = ${ this._nextId}`);
+      logger.debug(`getNextBlock = ${this._nextId}`);
       this._availableId = result[0][1];
       logger.debug(`getNextBlock = ${this._availableId}`);
     } catch (e) {
@@ -99,16 +99,22 @@ class IDGenerator {
    * @private
    */
   async updateNextBlock(nextStart) {
+    let informix = new Informix(dbOpts);
+    ctx = informix.createContext();
     try {
-      let informix = new Informix(dbOpts);
-
-      await informix.query(QUERY_UPDATE_ID_SEQ, {
+      await ctx.begin();
+      await informix.query(ctx, QUERY_UPDATE_ID_SEQ, {
         seqName: this.seqName,
         nextStart
       });
+
+      await ctx.commit();
     } catch (e) {
       logger.error("Failed to update id sequence: " + this.seqName);
       logger.error(util.inspect(e));
+      await ctx.rollback();
+    } finally {
+      await ctx.end();
     }
   }
 }
