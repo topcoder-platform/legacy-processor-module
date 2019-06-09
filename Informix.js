@@ -81,19 +81,19 @@ class InformixService {
     try {
       if (_.isObject(params)) {
         const [template, paramValues] = this._processSql(sql, params);
+        
         logger.debug(
           `preparing sql template '${template}' with param values [${paramValues.join()}]`
         );
-        stmt = await this.db.prepare(template);  
+      
+        stmt = await this.prepare(template);  
         logger.debug(`executing statement ${template}`);
         cursor = await stmt.exec(paramValues);
       } else {
-        cursor = await this.db.query(sql);
+        cursor = await this.query(sql);
       }
 
       result = await cursor.fetchAll();
-
-      
       logger.debug("returning results");
       return result;
     } catch (e) {
