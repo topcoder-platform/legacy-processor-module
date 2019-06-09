@@ -15,7 +15,7 @@ const QUERY_UPDATE_ID_SEQ =
 
 // db informix option
 const dbOpts = {
-  database: config.DB_NAME,
+  database: config.DB_ID_NAME,
   username: config.DB_USERNAME,
   password: config.DB_PASSWORD,
   pool: {
@@ -33,8 +33,7 @@ class IDGenerator {
    * @param {Informix} db database
    * @param {String} seqName sequence name
    */
-  constructor(db, seqName) {
-    this.db = db;
+  constructor(seqName) {
     this.seqName = seqName;
     this._availableId = 0;
     this.mutex = new Mutex();
@@ -74,7 +73,7 @@ class IDGenerator {
       let informix = new Informix(dbOpts);
 
       logger.debug(`inside getNextBlock = ${this.db}`);
-      const result = await informix.query(QUERY_GET_ID_SEQ, {
+      const result = await informix.getQuery(QUERY_GET_ID_SEQ, {
         seqName: this.seqName
       });
 
@@ -103,7 +102,7 @@ class IDGenerator {
     ctx = informix.createContext();
     try {
       await ctx.begin();
-      await informix.query(ctx, QUERY_UPDATE_ID_SEQ, {
+      await informix.executeQuery(ctx, QUERY_UPDATE_ID_SEQ, {
         seqName: this.seqName,
         nextStart
       });
