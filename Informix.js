@@ -17,17 +17,15 @@ class InformixService {
    * @param {Object} opts database options
    */
   constructor(opts) {
-    let {
-      database, username, password
-    } = opts
-    let key = `${database}-${username}-${password}`
-      // cache instances to avoid create multi instance for same database,username
+    let { database, username, password } = opts;
+    let key = `${database}-${username}-${password}`;
+    // cache instances to avoid create multi instance for same database,username
     if (instances[key]) {
-      return instances[key]
+      return instances[key];
     }
-    this.db = new Informix(opts)
-    instances[key] = this
-    return this
+    this.db = new Informix(opts);
+    instances[key] = this;
+    return this;
   }
 
   /**
@@ -75,25 +73,8 @@ class InformixService {
     return [template, paramValues];
   }
 
-  /**
-   * Query with sql and params
-   * @param{Object} conn the connection
-   * @param{String} sql the sql
-   * @param{Object} params the sql params
-   */
-  async query(conn, sql, params) {
-    if (_.isString(conn) && _.isUndefined(sql)) {
-      sql = conn;
-      conn = this.db;
-    } else if (_.isString(conn) && _.isObject(sql) && _.isUndefined(params)) {
-      params = sql;
-      sql = conn;
-      conn = this.db;
-    }
-    let fetchAll = sql
-      .toLowerCase()
-      .trimLeft()
-      .startsWith("select");
+
+  async getQuery(sql, params) {
     let cursor = null;
     let stmt = null;
     let result = null;
@@ -103,31 +84,50 @@ class InformixService {
         logger.debug(
           `preparing sql template '${template}' with param values [${paramValues.join()}]`
         );
-        stmt = await conn.prepare(template);
+        stmt = await this.db.prepare(template);  
         logger.debug(`executing statement ${template}`);
         cursor = await stmt.exec(paramValues);
-        logger.debug(`executed. aquired cursor ${cursor}`);
       } else {
-        cursor = await conn.query(sql);
+        cursor = await this.db.query(sql);
       }
-      if (fetchAll) {
-        result = await cursor.fetchAll();
+
+      result = await cursor.fetchAll();
+
+      
+      logger.debug("returning results");
+      return result;
+    } catch (e) {
+      logger.error(e);
+      throw e;
+    }
+  }
+
+
+  async executeQuery(ctx, sql, params) {
+    let cursor = null;
+    let stmt = null;
+    
+    try {
+      if (_.isObject(params)) {
+        const [template, paramValues] = this._processSql(sql, params);
+        logger.debug(
+          `preparing sql template '${template}' with param values [${paramValues.join()}]`
+        );
+        stmt = await ctx.prepare(template);  
+        logger.debug(`executing statement ${template}`);
+        cursor = await stmt.exec(paramValues);
+      } else {
+        cursor = await ctx.query(sql);
+      }
+
+      await cursor.close();
+      if (stmt) {
+        await stmt.free();
       }
     } catch (e) {
       logger.error(e);
       throw e;
-    } finally {
-      logger.debug('closing cursor');
-      if (cursor) {
-        await cursor.close();
-      }
-      if (stmt) {
-        logger.debug('freeing statement');
-        await stmt.free();
-      }
     }
-    logger.debug('returning results');
-    return result;
   }
 }
 
