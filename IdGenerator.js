@@ -73,7 +73,7 @@ class IDGenerator {
       let informix = new Informix(dbOpts);
 
       logger.debug(`inside getNextBlock = ${this.db}`);
-      const result = await informix.getQuery(QUERY_GET_ID_SEQ, {
+      const result = await informix.getQuery(informix, QUERY_GET_ID_SEQ, {
         seqName: this.seqName
       });
 

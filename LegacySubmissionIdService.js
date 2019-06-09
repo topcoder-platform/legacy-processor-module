@@ -180,7 +180,7 @@ async function getChallengeProperties(
 ) {
   let informix = new Informix(dbOpts);
   try {
-    const result = await informix.getQuery(QUERY_GET_CHALLENGE_PROPERTIES, {
+    const result = await informix.getQuery(informix, QUERY_GET_CHALLENGE_PROPERTIES, {
       challengeId,
       userId,
       resourceRoleId,
@@ -215,7 +215,7 @@ async function getChallengeProperties(
 async function getMMChallengeProperties(challengeId, userId) {
   let informix = new Informix(dbOpts);
   try {
-    const result = await informix.getQuery(QUERY_GET_MMCHALLENGE_PROPERTIES, {
+    const result = await informix.getQuery(informix, QUERY_GET_MMCHALLENGE_PROPERTIES, {
       challengeId,
       userId
     });
@@ -264,7 +264,7 @@ async function addMMSubmission(challengeId, userId, submissionTime) {
      componentStateId: ${componentStateId} numSubmissions: ${numSubmissions} points: ${points}`
     );
 
-    const rrResult = await informix.getQuery(QUERY_GET_MM_ROUND_REGISTRATION, {
+    const rrResult = await informix.getQuery(informix, QUERY_GET_MM_ROUND_REGISTRATION, {
       roundId,
       userId
     });
@@ -582,7 +582,7 @@ async function updateProvisionalScore(
     logger.debug(`Get componentStateId: ${componentStateId}`);
 
     // Query submission number
-    const result = await informix.getQuery(QUERY_GET_SUBMISSION_NUMBER, {
+    const result = await informix.getQuery(informix, QUERY_GET_SUBMISSION_NUMBER, {
       challengeId,
       userId,
       phaseId,
@@ -664,13 +664,13 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
     );
 
     // Get initial_score from submission table
-    let result = await informix.getQuery(QUERY_GET_SUBMISSION_INITIAL_SCORE, {
+    let result = await informix.getQuery(informix, QUERY_GET_SUBMISSION_INITIAL_SCORE, {
       submissionId
     });
     const [initialScore] = result[0];
 
     // Check whether user result exists in informixoltp:long_comp_result
-    result = await informix.getQuery(QUERY_CHECK_COMP_RESULT_EXISTS, {
+    result = await informix.getQuery(informix, QUERY_CHECK_COMP_RESULT_EXISTS, {
       roundId,
       userId
     });
@@ -690,7 +690,7 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
       logger.debug("Rated Match - Get previous Rating and Vol");
 
       // Find user's last entry from informixoltp:long_comp_result
-      const userLastCompResultArr = await informix.getQuery(
+      const userLastCompResultArr = await informix.getQuery(informix, 
         QUERY_GET_LAST_COMP_RESULT,
         params
       );
@@ -737,7 +737,7 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
     }
 
     // Update placed
-    result = await informix.getQuery(QUERY_GET_COMP_RESULT, params);
+    result = await informix.getQuery(informix, QUERY_GET_COMP_RESULT, params);
     for (let i = 1; i <= result.length; i++) {
       const r = result[i - 1];
       if (i !== r[1]) {
