@@ -74,7 +74,7 @@ class InformixService {
   }
 
 
-  async getQuery(db, sql, params) {
+  async getQuery(informix, sql, params) {
     let cursor = null;
     let stmt = null;
     let result = null;
@@ -86,11 +86,11 @@ class InformixService {
           `preparing sql template '${template}' with param values [${paramValues.join()}]`
         );
       
-        stmt = await db.prepare(template);  
+        stmt = await informix.db.prepare(template);  
         logger.debug(`executing statement ${template}`);
         cursor = await stmt.exec(paramValues);
       } else {
-        cursor = await db.query(sql);
+        cursor = await informix.db.query(sql);
       }
 
       result = await cursor.fetchAll();
