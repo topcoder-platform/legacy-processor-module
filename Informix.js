@@ -16,10 +16,12 @@ class InformixService {
    * Constructor
    * @param {Object} opts database options
    */
-  constructor (opts) {
-    let {database, username, password} = opts
+  constructor(opts) {
+    let {
+      database, username, password
+    } = opts
     let key = `${database}-${username}-${password}`
-    // cache instances to avoid create multi instance for same database,username
+      // cache instances to avoid create multi instance for same database,username
     if (instances[key]) {
       return instances[key]
     }
@@ -99,10 +101,12 @@ class InformixService {
       if (_.isObject(params)) {
         const [template, paramValues] = this._processSql(sql, params);
         logger.debug(
-          `sql template '${template}' with param values [${paramValues.join()}]`
+          `preparing sql template '${template}' with param values [${paramValues.join()}]`
         );
         stmt = await conn.prepare(template);
+        logger.debug(`executing statement ${template}`);
         cursor = await stmt.exec(paramValues);
+        logger.debug(`executed. aquired cursor ${cursor}`);
       } else {
         cursor = await conn.query(sql);
       }
@@ -110,15 +114,19 @@ class InformixService {
         result = await cursor.fetchAll();
       }
     } catch (e) {
+      logger.error(e);
       throw e;
     } finally {
+      logger.debug('closing cursor');
       if (cursor) {
         await cursor.close();
       }
       if (stmt) {
+        logger.debug('freeing statement');
         await stmt.free();
       }
     }
+    logger.debug('returning results');
     return result;
   }
 }

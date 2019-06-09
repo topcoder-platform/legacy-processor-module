@@ -78,8 +78,8 @@ class IDGenerator {
         seqName: this.seqName
       });
 
-      logger.debug(`getNextBlock = ${result}`);
-      
+      logger.debug(`getNextBlock = ${JSON.stringify(result)}`);
+
       if (!_.isArray(result) || _.isEmpty(result)) {
         throw new Error(`null or empty result for ${this.seqName}`);
       }
