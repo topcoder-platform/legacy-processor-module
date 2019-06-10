@@ -139,7 +139,7 @@ class InformixService {
     let stmt = null;
     let result = null;
     try {
-      logger.debug(`==== ${params}`)
+      logger.debug(`==== ${params}`);
       if (_.isObject(params)) {
         const [template, paramValues] = this._processSql(sql, params);
 
