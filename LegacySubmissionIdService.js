@@ -30,9 +30,19 @@ const dbOpts = {
   }
 };
 
+const dbIBOpts = {
+  database: "common_oltp@informixoltp_tcp",
+  username: config.DB_USERNAME,
+  password: config.DB_PASSWORD,
+  pool: {
+    min: 0,
+    max: 10
+  }
+};
+
 let informix = new Informix(dbOpts);
 
-let informixGen = new Informix(dbOpts);
+let informixGen = new Informix(dbIBOpts);
 let idUploadGen = new IDGenerator(informixGen, config.ID_SEQ_UPLOAD);
 let idSubmissionGen = new IDGenerator(informixGen, config.ID_SEQ_SUBMISSION);
 let componentStateGen = new IDGenerator(
