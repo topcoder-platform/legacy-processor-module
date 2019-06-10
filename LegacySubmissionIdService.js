@@ -255,102 +255,219 @@ async function getMMChallengeProperties(challengeId, userId) {
  * @param {Number} submissionTime the submission timestamp
  * @private
  */
-async function addMMSubmission(challengeId, userId, submissionTime) {
-  // dbIOOpts
+async function addMMSubmission(
+  newSubmissionId,
+  challengeId,
+  userId,
+  phaseId,
+  url,
+  submissionType,
+  submissionTime,
+  isMM
+) {
   let informix = new Informix(dbOpts);
   let ctx = informix.createContext();
 
   try {
-    let [
-      roundId,
-      componentId,
-      componentStateId,
-      numSubmissions,
-      points
-    ] = await getMMChallengeProperties(challengeId, userId);
-    logger.debug(`get mm challenge properties roundId: ${roundId} componentId: ${componentId} 
-     componentStateId: ${componentStateId} numSubmissions: ${numSubmissions} points: ${points}`);
+    const [
+      resourceId,
+      value,
+      phaseTypeId,
+      challengeTypeId
+    ] = await getChallengeProperties(
+      challengeId,
+      userId,
+      constant.SUBMISSION_TYPE[submissionType].roleId,
+      phaseId
+    );
 
-    const rrResult = await informix.getQuery(QUERY_GET_MM_ROUND_REGISTRATION, {
-      roundId,
-      userId
-    });
-    if (_.isEmpty(rrResult)) {
-      // Add entry in informixoltp:round_registration
-      const rrParams = {
-        roundId,
-        userId,
-        timestamp: { replace: "current" },
-        eligible: 1,
-        teamId: { replace: "null" }
-      };
-      logger.debug(
-        `insert round_registration with params : ${JSON.stringify(rrParams)}`
-      );
-      await informix.executeQuery(
-        ctx,
-        QUERY_INSERT_MM_ROUND_REGISTRATION,
-        rrParams
-      );
+    let uploadType = null;
+    let submissionId = null;
+
+    let isAllowMultipleSubmission = "true";
+
+    const uploadId = await idUploadGen.getNextId();
+
+    logger.info(`uploadId = ${uploadId}`);
+
+    if (phaseTypeId === constant.PHASE_TYPE["Final Fix"]) {
+      uploadType = constant.UPLOAD_TYPE["Final Fix"];
     } else {
-      logger.debug(
-        `round_registration already exists, roundId: ${roundId}, userId: ${userId}`
-      );
+      submissionId = await idSubmissionGen.getNextId();
+      uploadType = constant.UPLOAD_TYPE["Submission"];
     }
 
-    if (_.isFinite(componentStateId)) {
-      // Increment submission_number by 1
-      numSubmissions++;
+    logger.info(`add challenge submission for resourceId: ${resourceId}
+           uploadId: ${uploadId}
+           submissionId: ${submissionId}
+           allow multiple submission: ${isAllowMultipleSubmission}
+           uploadType: ${uploadType}
+           challengeTypeId: ${challengeTypeId}`);
+
+    let patchObject;
+
+    let informix = new Informix(dbOpts);
+    let ctx = informix.createContext();
+    await ctx.begin();
+    const audits = {
+      createUser: userId,
+      createDate: { replace: "current" },
+      modifyUser: userId,
+      modifyDate: { replace: "current" }
+    };
+    let params = {
+      uploadId,
+      challengeId,
+      phaseId,
+      resourceId,
+      uploadType,
+      url,
+      uploadStatusId: constant.UPLOAD_STATUS["Active"],
+      parameter: "N/A",
+      ...audits
+    };
+    logger.debug(`insert upload with params : ${JSON.stringify(params)}`);
+
+    await informix.executeQuery(ctx, QUERY_INSERT_UPLOAD, params);
+    if (uploadType === constant.UPLOAD_TYPE["Final Fix"]) {
+      logger.debug(`final fix upload, only insert upload`);
+      patchObject = { legacyUploadId: uploadId };
+    } else {
+      params = {
+        submissionId,
+        uploadId,
+        submissionStatusId: constant.SUBMISSION_STATUS["Active"],
+        submissionTypeId: constant.SUBMISSION_TYPE[submissionType].id,
+        ...audits
+      };
+      logger.debug(`insert submission with params : ${JSON.stringify(params)}`);
+
+      await informix.executeQuery(ctx, QUERY_INSERT_SUBMISSION, params);
+      params = {
+        submissionId,
+        resourceId,
+        submissionStatusId: constant.SUBMISSION_STATUS["Active"],
+        submissionTypeId: constant.SUBMISSION_TYPE[submissionType].id,
+        ...audits
+      };
+
       logger.debug(
-        `increment long_component_state#submission_number by 1, componentStateId: ${componentStateId}, numSubmissions: ${numSubmissions}`
+        `insert resource submission with params : ${JSON.stringify(params)}`
       );
       await informix.executeQuery(
         ctx,
-        QUERY_UPDATE_LONG_COMPONENT_STATE_NUN_SUBMISSIONS,
-        { componentStateId, numSubmissions }
+        QUERY_INSERT_RESOURCE_SUBMISSION,
+        params
       );
-    } else {
-      numSubmissions = 1;
-      componentStateId = await componentStateGen.getNextId();
-      // Add entry in informixoltp:long_component_state
-      const lcsParams = {
-        componentStateId,
+
+      if (!isAllowMultipleSubmission) {
+        logger.debug(
+          `delete previous submission for challengeId: ${challengeId} resourceId: ${resourceId} uploadId:${uploadId}`
+        );
+        const delParams = { challengeId, resourceId, uploadId };
+        await informix.executeQuery(ctx, QUERY_DELETE_UPLOAD, delParams);
+        await informix.executeQuery(ctx, QUERY_DELETE_SUBMISSION, delParams);
+      }
+
+      let [
         roundId,
         componentId,
-        userId,
-        points: 0,
-        statusId: constant.COMPONENT_STATE.ACTIVE,
+        componentStateId,
         numSubmissions,
-        numExampleSubmissions: 0
+        points
+      ] = await getMMChallengeProperties(challengeId, userId);
+      logger.debug(`get mm challenge properties roundId: ${roundId} componentId: ${componentId} 
+     componentStateId: ${componentStateId} numSubmissions: ${numSubmissions} points: ${points}`);
+
+      const rrResult = await informix.getQuery(
+        QUERY_GET_MM_ROUND_REGISTRATION,
+        {
+          roundId,
+          userId
+        }
+      );
+      if (_.isEmpty(rrResult)) {
+        // Add entry in informixoltp:round_registration
+        const rrParams = {
+          roundId,
+          userId,
+          timestamp: { replace: "current" },
+          eligible: 1,
+          teamId: { replace: "null" }
+        };
+        logger.debug(
+          `insert round_registration with params : ${JSON.stringify(rrParams)}`
+        );
+        await informix.executeQuery(
+          ctx,
+          QUERY_INSERT_MM_ROUND_REGISTRATION,
+          rrParams
+        );
+      } else {
+        logger.debug(
+          `round_registration already exists, roundId: ${roundId}, userId: ${userId}`
+        );
+      }
+
+      if (_.isFinite(componentStateId)) {
+        // Increment submission_number by 1
+        numSubmissions++;
+        logger.debug(
+          `increment long_component_state#submission_number by 1, componentStateId: ${componentStateId}, numSubmissions: ${numSubmissions}`
+        );
+        await informix.executeQuery(
+          ctx,
+          QUERY_UPDATE_LONG_COMPONENT_STATE_NUN_SUBMISSIONS,
+          { componentStateId, numSubmissions }
+        );
+      } else {
+        numSubmissions = 1;
+        componentStateId = await componentStateGen.getNextId();
+        // Add entry in informixoltp:long_component_state
+        const lcsParams = {
+          componentStateId,
+          roundId,
+          componentId,
+          userId,
+          points: 0,
+          statusId: constant.COMPONENT_STATE.ACTIVE,
+          numSubmissions,
+          numExampleSubmissions: 0
+        };
+
+        logger.debug(
+          `insert long_component_state with params : ${JSON.stringify(
+            lcsParams
+          )}`
+        );
+        await informix.executeQuery(
+          ctx,
+          QUERY_INSERT_LONG_COMPONENT_STATE,
+          lcsParams
+        );
+      }
+
+      // Add entry in informixoltp:long_submission
+      const lsParams = {
+        componentStateId,
+        numSubmissions,
+        submissionText: { replace: "null" },
+        openTime: submissionTime,
+        submitTime: submissionTime,
+        submissionPoints: points,
+        languageId: constant.LANGUAGE.OTHERS,
+        isExample: 0
       };
 
       logger.debug(
-        `insert long_component_state with params : ${JSON.stringify(lcsParams)}`
+        `insert long_submission with params : ${JSON.stringify(lsParams)}`
       );
-      await informix.executeQuery(
-        ctx,
-        QUERY_INSERT_LONG_COMPONENT_STATE,
-        lcsParams
-      );
+      await informix.executeQuery(ctx, QUERY_INSERT_LONG_SUBMISSION, lsParams);
     }
 
-    // Add entry in informixoltp:long_submission
-    const lsParams = {
-      componentStateId,
-      numSubmissions,
-      submissionText: { replace: "null" },
-      openTime: submissionTime,
-      submitTime: submissionTime,
-      submissionPoints: points,
-      languageId: constant.LANGUAGE.OTHERS,
-      isExample: 0
-    };
-
-    logger.debug(
-      `insert long_submission with params : ${JSON.stringify(lsParams)}`
-    );
-    await informix.executeQuery(ctx, QUERY_INSERT_LONG_SUBMISSION, lsParams);
     await ctx.commit();
+    await patchSubmission(newSubmissionId, patchObject);
+    return patchObject;
   } catch (e) {
     await ctx.rollback();
     throw e;
@@ -484,24 +601,23 @@ async function addSubmission(
         await informix.executeQuery(ctx, QUERY_DELETE_SUBMISSION, delParams);
       }
 
-      if (isMM) {
-        // Handle MM challenge
-        await addMMSubmission(challengeId, userId, submissionTime);
-      }
       patchObject = { legacySubmissionId: submissionId };
+      // if (isMM) {
+      //   // Handle MM challenge
+      //   await addMMSubmission(challengeId, userId, submissionTime);
+      // }
+      // patchObject = { legacySubmissionId: submissionId };
     }
 
     await ctx.commit();
+    await patchSubmission(newSubmissionId, patchObject);
+    return patchObject;
   } catch (e) {
     await ctx.rollback();
     throw e;
   } finally {
     await ctx.end();
   }
-
-  await patchSubmission(newSubmissionId, patchObject);
-
-  return patchObject;
 }
 
 /**
@@ -886,6 +1002,7 @@ async function getSubTrack(challengeId) {
 
 module.exports = {
   addSubmission,
+  addMMSubmission,
   updateUpload,
   updateProvisionalScore,
   updateFinalScore,
