@@ -140,31 +140,37 @@ class InformixService {
     let result = null;
     try {
       logger.debug(`==== ${params}`);
-      if (_.isObject(params)) {
-        const [template, paramValues] = this._processSql(sql, params);
-
-        logger.debug(
-          `preparing sql template '${template}' with param values [${paramValues.join()}]`
-        );
-
-        logger.debug("==============");
-        logger.debug(`${this.db}`);
-        logger.debug("==============");
-        logger.debug(`${db}`);
-        stmt = await db.prepare(template);
-        logger.debug(`executing statement ${template}`);
-        cursor = await stmt.exec(paramValues);
-      } else {
-        cursor = await db.query(sql);
-      }
-
+      stmt = await db.prepare(sql);
+      logger.debug(`statement created ${stmt}`);
+      cursor = await stmt.exec(params);
+      logger.debug(`cursor created ${cursor}`);
       result = await cursor.fetchAll();
-      logger.debug("returning results");
+      logger.debug(`result created ${result}`);
+      // if (_.isObject(params)) {
+      //   const [template, paramValues] = this._processSql(sql, params);
 
-      await cursor.close();
-      if (stmt) {
-        await stmt.free();
-      }
+      //   logger.debug(
+      //     `preparing sql template '${template}' with param values [${paramValues.join()}]`
+      //   );
+
+      //   logger.debug("==============");
+      //   logger.debug(`${this.db}`);
+      //   logger.debug("==============");
+      //   logger.debug(`${db}`);
+      //   stmt = await db.prepare(template);
+      //   logger.debug(`executing statement ${template}`);
+      //   cursor = await stmt.exec(paramValues);
+      // } else {
+      //   cursor = await db.query(sql);
+      // }
+
+      // result = await cursor.fetchAll();
+      // logger.debug("returning results");
+
+      // await cursor.close();
+      // if (stmt) {
+      //   await stmt.free();
+      // }
 
       return result;
     } catch (e) {
