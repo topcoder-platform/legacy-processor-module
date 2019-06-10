@@ -108,6 +108,7 @@ class InformixService {
       }
       if (fetchAll) {
         result = await cursor.fetchAll();
+        await cursor.close();
       }
     } catch (e) {
       throw e;

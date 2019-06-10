@@ -217,6 +217,7 @@ async function getChallengeProperties(
  */
 async function getMMChallengeProperties(challengeId, userId) {
   let informix = new Informix(dbOpts);
+  
   const result = await informix.query(QUERY_GET_MMCHALLENGE_PROPERTIES, {
     challengeId,
     userId
