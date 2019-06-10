@@ -188,23 +188,28 @@ async function getChallengeProperties(
   resourceRoleId,
   phaseId
 ) {
-  let informix = new Informix(dbOpts);
-  
-  const result = await informix.getQuery(QUERY_GET_CHALLENGE_PROPERTIES, {
-    challengeId,
-    userId,
-    resourceRoleId,
-    phaseId
-  });
-  logger.debug(
-    `Challenge properties for: ${challengeId} are: ${JSON.stringify(result)}`
-  );
-  if (!_.isArray(result) || _.isEmpty(result)) {
-    throw new Error(
-      `null or empty result get challenge properties for: challengeId ${challengeId}, userId ${userId}, resourceRoleId ${resourceRoleId}, phaseId ${phaseId}`
+  try {
+    let informix = new Informix(dbOpts);
+
+    const result = await informix.getQuery(QUERY_GET_CHALLENGE_PROPERTIES, {
+      challengeId,
+      userId,
+      resourceRoleId,
+      phaseId
+    });
+    logger.debug(
+      `Challenge properties for: ${challengeId} are: ${JSON.stringify(result)}`
     );
+    if (!_.isArray(result) || _.isEmpty(result)) {
+      throw new Error(
+        `null or empty result get challenge properties for: challengeId ${challengeId}, userId ${userId}, resourceRoleId ${resourceRoleId}, phaseId ${phaseId}`
+      );
+    }
+    return result[0];
+  } catch (e) {
+    logger.error(e);
+    throw e;
   }
-  return result[0];
 }
 
 /**
@@ -216,23 +221,29 @@ async function getChallengeProperties(
  * @returns {Array} [roundId, componentId, componentStateId, numSubmissions, points, ratedInd]
  */
 async function getMMChallengeProperties(challengeId, userId) {
-  let informix = new Informix(dbOpts);
-  
-  const result = await informix.getQuery(QUERY_GET_MMCHALLENGE_PROPERTIES, {
-    challengeId,
-    userId
-  });
+  try {
+    let informix = new Informix(dbOpts);
+    const result = await informix.getQuery(QUERY_GET_MMCHALLENGE_PROPERTIES, {
+      challengeId,
+      userId
+    });
 
-  logger.debug(
-    `MM Challenge properties for: ${challengeId} are: ${JSON.stringify(result)}`
-  );
-
-  if (!_.isArray(result) || _.isEmpty(result)) {
-    throw new Error(
-      `null or empty result get mm challenge properties for : challenge id ${challengeId}, user id ${userId}`
+    logger.debug(
+      `MM Challenge properties for: ${challengeId} are: ${JSON.stringify(
+        result
+      )}`
     );
+
+    if (!_.isArray(result) || _.isEmpty(result)) {
+      throw new Error(
+        `null or empty result get mm challenge properties for : challenge id ${challengeId}, user id ${userId}`
+      );
+    }
+    return result[0];
+  } catch (e) {
+    logger.error(e);
+    throw e;
   }
-  return result[0];
 }
 
 /**
@@ -248,8 +259,8 @@ async function addMMSubmission(challengeId, userId, submissionTime) {
   // dbIOOpts
   let informix = new Informix(dbOpts);
   let ctx = informix.createContext();
-  
-  try{
+
+  try {
     let [
       roundId,
       componentId,
@@ -259,7 +270,7 @@ async function addMMSubmission(challengeId, userId, submissionTime) {
     ] = await getMMChallengeProperties(challengeId, userId);
     logger.debug(`get mm challenge properties roundId: ${roundId} componentId: ${componentId} 
      componentStateId: ${componentStateId} numSubmissions: ${numSubmissions} points: ${points}`);
-  
+
     const rrResult = await informix.getQuery(QUERY_GET_MM_ROUND_REGISTRATION, {
       roundId,
       userId
@@ -276,13 +287,17 @@ async function addMMSubmission(challengeId, userId, submissionTime) {
       logger.debug(
         `insert round_registration with params : ${JSON.stringify(rrParams)}`
       );
-      await informix.executeQuery(ctx, QUERY_INSERT_MM_ROUND_REGISTRATION, rrParams);
+      await informix.executeQuery(
+        ctx,
+        QUERY_INSERT_MM_ROUND_REGISTRATION,
+        rrParams
+      );
     } else {
       logger.debug(
         `round_registration already exists, roundId: ${roundId}, userId: ${userId}`
       );
     }
-  
+
     if (_.isFinite(componentStateId)) {
       // Increment submission_number by 1
       numSubmissions++;
@@ -308,13 +323,17 @@ async function addMMSubmission(challengeId, userId, submissionTime) {
         numSubmissions,
         numExampleSubmissions: 0
       };
-  
+
       logger.debug(
         `insert long_component_state with params : ${JSON.stringify(lcsParams)}`
       );
-      await informix.executeQuery(ctx, QUERY_INSERT_LONG_COMPONENT_STATE, lcsParams);
+      await informix.executeQuery(
+        ctx,
+        QUERY_INSERT_LONG_COMPONENT_STATE,
+        lcsParams
+      );
     }
-  
+
     // Add entry in informixoltp:long_submission
     const lsParams = {
       componentStateId,
@@ -326,11 +345,11 @@ async function addMMSubmission(challengeId, userId, submissionTime) {
       languageId: constant.LANGUAGE.OTHERS,
       isExample: 0
     };
-  
+
     logger.debug(
       `insert long_submission with params : ${JSON.stringify(lsParams)}`
     );
-    await informix.executeQuery(ctx, QUERY_INSERT_LONG_SUBMISSION, lsParams);  
+    await informix.executeQuery(ctx, QUERY_INSERT_LONG_SUBMISSION, lsParams);
     await ctx.commit();
   } catch (e) {
     await ctx.rollback();
@@ -423,7 +442,7 @@ async function addSubmission(
       ...audits
     };
     logger.debug(`insert upload with params : ${JSON.stringify(params)}`);
-    
+
     await informix.executeQuery(ctx, QUERY_INSERT_UPLOAD, params);
     if (uploadType === constant.UPLOAD_TYPE["Final Fix"]) {
       logger.debug(`final fix upload, only insert upload`);
@@ -437,7 +456,7 @@ async function addSubmission(
         ...audits
       };
       logger.debug(`insert submission with params : ${JSON.stringify(params)}`);
-      
+
       await informix.executeQuery(ctx, QUERY_INSERT_SUBMISSION, params);
       params = {
         submissionId,
@@ -446,12 +465,16 @@ async function addSubmission(
         submissionTypeId: constant.SUBMISSION_TYPE[submissionType].id,
         ...audits
       };
-      
+
       logger.debug(
         `insert resource submission with params : ${JSON.stringify(params)}`
       );
-      await informix.executeQuery(ctx, QUERY_INSERT_RESOURCE_SUBMISSION, params);
-      
+      await informix.executeQuery(
+        ctx,
+        QUERY_INSERT_RESOURCE_SUBMISSION,
+        params
+      );
+
       if (!isAllowMultipleSubmission) {
         logger.debug(
           `delete previous submission for challengeId: ${challengeId} resourceId: ${resourceId} uploadId:${uploadId}`
@@ -548,10 +571,14 @@ async function updateProvisionalScore(
     logger.debug(`Get submission number: ${submissionNumber}`);
 
     // Update the initial_score in submission table
-    await informix.executeQuery(ctx, QUERY_UPDATE_SUBMISSION_INITIAL_REVIEW_SCORE, {
-      submissionId,
-      reviewScore
-    });
+    await informix.executeQuery(
+      ctx,
+      QUERY_UPDATE_SUBMISSION_INITIAL_REVIEW_SCORE,
+      {
+        submissionId,
+        reviewScore
+      }
+    );
 
     // Update the submission_points in informixoltp:long_submission table
     await informix.executeQuery(ctx, QUERY_UPDATE_LONG_SUBMISSION_SCORE, {
@@ -596,7 +623,7 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
       challengeId,
       userId
     );
-    
+
     if (!roundId) {
       throw new Error(
         `MM round not found, challengeId: ${challengeId}, userId: ${userId}`
@@ -605,16 +632,19 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
     logger.debug(`Get roundId: ${roundId}`);
 
     // Update the final_score in submission table
-    await informix.executeQuery(ctx, QUERY_UPDATE_SUBMISSION_FINAL_REVIEW_SCORE, {
-      submissionId,
-      finalScore
-    });
+    await informix.executeQuery(
+      ctx,
+      QUERY_UPDATE_SUBMISSION_FINAL_REVIEW_SCORE,
+      {
+        submissionId,
+        finalScore
+      }
+    );
 
     // Get initial_score from submission table
-    let result = await informix.getQuery(
-      QUERY_GET_SUBMISSION_INITIAL_SCORE,
-      { submissionId }
-    );
+    let result = await informix.getQuery(QUERY_GET_SUBMISSION_INITIAL_SCORE, {
+      submissionId
+    });
     const [initialScore] = result[0];
 
     // Check whether user result exists in informixoltp:long_comp_result
@@ -716,7 +746,7 @@ async function updateUpload(
   let informix = new Informix(dbOpts);
   let ctx = informix.createContext();
 
-  try{
+  try {
     if (submissionId > 0) {
       sql = QUERY_UPDATE_UPLOAD_BY_SUBMISSION_ID;
       params = { url, submissionId };
