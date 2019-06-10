@@ -2,47 +2,77 @@
  * The informix service
  */
 const _ = require("lodash");
-const Informix = require("informix").Informix;
-const logger = require("./common/logger");
-
-const paramReg = /@(\w+?)@/; // sql param regex
-let instances = {};
+const config = require("config");
+const ifxnjs = require("ifxnjs");
+const Pool = ifxnjs.Pool;
+const pool = Promise.promisifyAll(new Pool());
+pool.setMaxPoolSize(config.get("INFORMIX.POOL_MAX_SIZE"));
 
 /**
- * Main class of InformixService
+ * Get Informix connection using the configured parameters
+ * @return {Object} Informix connection
  */
-class InformixService {
-  /**
-   * Constructor
-   * @param {Object} opts database options
-   */
-  constructor(opts) {
-    let { database, username, password } = opts;
-    let key = `${database}-${username}-${password}`;
-    // cache instances to avoid create multi instance for same database,username
-    if (instances[key]) {
-      return instances[key];
-    }
-    this.db = new Informix(opts);
-    instances[key] = this;
-    return this;
-  }
+async function getInformixConnection() {
+  // construct the connection string from the configuration parameters.
+  const connectionString =
+    "SERVER=" +
+    config.get("INFORMIX.SERVER") +
+    ";DATABASE=" +
+    config.get("INFORMIX.DATABASE") +
+    ";HOST=" +
+    config.get("INFORMIX.HOST") +
+    ";Protocol=" +
+    config.get("INFORMIX.PROTOCOL") +
+    ";SERVICE=" +
+    config.get("INFORMIX.PORT") +
+    ";DB_LOCALE=" +
+    config.get("INFORMIX.DB_LOCALE") +
+    ";UID=" +
+    config.get("INFORMIX.USER") +
+    ";PWD=" +
+    config.get("INFORMIX.PASSWORD");
+  const conn = await pool.openAsync(connectionString);
+  return Promise.promisifyAll(conn);
+}
 
-  /**
-   * Create context for informix.
-   */
-  createContext() {
-    return this.db.createContext();
-  }
+/**
+ * Prepare Informix statement
+ * @param connection the Informix connection
+ * @param sql the sql
+ * @return {Object} Informix statement
+ */
+async function prepare(connection, sql) {
+  const stmt = await connection.prepareAsync(sql);
+  return Promise.promisifyAll(stmt);
+}
 
-  /**
+/**
+ * Wrap Informix queries with transaction support
+ * @param func the Informix multi queries with write operations
+ */
+async function wrapTransaction(func) {
+  const conn = await getInformixConnection();
+  try {
+    await conn.beginTransactionAsync();
+    const result = await func(conn);
+    await conn.commitTransactionAsync();
+    return result;
+  } catch (e) {
+    await conn.rollbackTransactionAsync();
+    throw e;
+  } finally {
+    await conn.closeAsync();
+  }
+}
+
+/**
    * Process sql with params.
    * It will find param regex and replace with ? or value in param value if define replace=true as param value
    * @param sql the sql
    * @param params the sql params
    * @private
    */
-  _processSql(sql, params) {
+  function processSql(sql, params) {
     let template = String(sql);
     const paramValues = [];
     while (true) {
@@ -73,62 +103,9 @@ class InformixService {
     return [template, paramValues];
   }
 
-
-  async getQuery(informix, sql, params) {
-    let cursor = null;
-    let stmt = null;
-    let result = null;
-    try {
-      if (_.isObject(params)) {
-        const [template, paramValues] = this._processSql(sql, params);
-        
-        logger.debug(
-          `preparing sql template '${template}' with param values [${paramValues.join()}]`
-        );
-      
-        stmt = await informix.db.prepare(template);  
-        logger.debug(`executing statement ${template}`);
-        cursor = await stmt.exec(paramValues);
-      } else {
-        cursor = await informix.db.query(sql);
-      }
-
-      result = await cursor.fetchAll();
-      logger.debug("returning results");
-      return result;
-    } catch (e) {
-      logger.error(e);
-      throw e;
-    }
-  }
-
-
-  async executeQuery(ctx, sql, params) {
-    let cursor = null;
-    let stmt = null;
-    
-    try {
-      if (_.isObject(params)) {
-        const [template, paramValues] = this._processSql(sql, params);
-        logger.debug(
-          `preparing sql template '${template}' with param values [${paramValues.join()}]`
-        );
-        stmt = await ctx.prepare(template);  
-        logger.debug(`executing statement ${template}`);
-        cursor = await stmt.exec(paramValues);
-      } else {
-        cursor = await ctx.query(sql);
-      }
-
-      await cursor.close();
-      if (stmt) {
-        await stmt.free();
-      }
-    } catch (e) {
-      logger.error(e);
-      throw e;
-    }
-  }
-}
-
-module.exports = InformixService;
+module.exports = {
+  getInformixConnection,
+  prepare,
+  wrapTransaction,
+  processSql
+};
