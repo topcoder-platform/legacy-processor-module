@@ -693,6 +693,7 @@ async function updateUpload(
 ) {
   let sql;
   let params;
+  let informix = new Informix(dbOpts);
 
   if (submissionId > 0) {
     sql = QUERY_UPDATE_UPLOAD_BY_SUBMISSION_ID;
