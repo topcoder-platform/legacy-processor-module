@@ -64,15 +64,20 @@ class IDGenerator {
    * @private
    */
   async getNextBlock() {
-    let informix = new Informix(dbOpts);
-    const result = await informix.db.query(QUERY_GET_ID_SEQ, {
-      seqName: this.seqName
-    });
-    if (!_.isArray(result) || _.isEmpty(result)) {
-      throw new Error(`null or empty result for ${this.seqName}`);
+    try {
+      let informix = new Informix(dbOpts);
+      const result = await informix.query(QUERY_GET_ID_SEQ, {
+        seqName: this.seqName
+      });
+      if (!_.isArray(result) || _.isEmpty(result)) {
+        throw new Error(`null or empty result for ${this.seqName}`);
+      }
+      this._nextId = --result[0][0];
+      this._availableId = result[0][1];
+    } catch (e) {
+      throw e;
     }
-    this._nextId = --result[0][0];
-    this._availableId = result[0][1];
+    
   }
 
   /**
