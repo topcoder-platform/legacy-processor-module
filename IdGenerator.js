@@ -77,7 +77,6 @@ class IDGenerator {
     } catch (e) {
       throw e;
     }
-    
   }
 
   /**
@@ -86,9 +85,11 @@ class IDGenerator {
    * @private
    */
   async updateNextBlock(nextStart) {
+    let informix = new Informix(dbOpts);
+    let ctx = informix.createContext();
     try {
-      let informix = new Informix(dbOpts);
-      let ctx = informix.createContext();
+      await ctx.begin();
+      
       await informix.executeQuery(ctx, QUERY_UPDATE_ID_SEQ, {
         seqName: this.seqName,
         nextStart
