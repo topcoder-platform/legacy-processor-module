@@ -146,6 +146,7 @@ class InformixService {
           `preparing sql template '${template}' with param values [${paramValues.join()}]`
         );
 
+        logger.debug(`using db connection: ${JSON.stringify(this.db)}`);
         stmt = await this.db.prepare(template);
         logger.debug(`executing statement ${template}`);
         cursor = await stmt.exec(paramValues);
