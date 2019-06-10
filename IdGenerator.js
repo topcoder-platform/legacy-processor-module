@@ -10,7 +10,7 @@ const config = require("config");
 
 // db informix option
 const dbOpts = {
-  database: DB_ID_NAME,
+  database: config.DB_ID_NAME,
   username: config.DB_USERNAME,
   password: config.DB_PASSWORD,
   pool: {
