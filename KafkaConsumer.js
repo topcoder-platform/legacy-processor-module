@@ -15,6 +15,7 @@ global.Promise = require("bluebird");
  */
 function getKafkaOptions() {
   const options = {
+    handlerConcurrency: config.KAFKA_CONCURRENCY,
     connectionString: config.KAFKA_URL,
     groupId: config.KAFKA_GROUP_ID
   };
