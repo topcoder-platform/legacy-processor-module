@@ -596,6 +596,7 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
       challengeId,
       userId
     );
+    
     if (!roundId) {
       throw new Error(
         `MM round not found, challengeId: ${challengeId}, userId: ${userId}`

@@ -66,7 +66,7 @@ class IDGenerator {
   async getNextBlock() {
     try {
       let informix = new Informix(dbOpts);
-      const result = await informix.query(QUERY_GET_ID_SEQ, {
+      const result = await informix.getQuery(QUERY_GET_ID_SEQ, {
         seqName: this.seqName
       });
       if (!_.isArray(result) || _.isEmpty(result)) {
@@ -88,13 +88,19 @@ class IDGenerator {
   async updateNextBlock(nextStart) {
     try {
       let informix = new Informix(dbOpts);
-      await informix.query(QUERY_UPDATE_ID_SEQ, {
+      let ctx = informix.createContext();
+      await informix.executeQuery(ctx, QUERY_UPDATE_ID_SEQ, {
         seqName: this.seqName,
         nextStart
       });
+      await ctx.commit();
     } catch (e) {
       logger.error("Failed to update id sequence: " + this.seqName);
       logger.error(util.inspect(e));
+      await ctx.rollback();
+      throw e;
+    } finally {
+      await ctx.end();
     }
   }
 }
