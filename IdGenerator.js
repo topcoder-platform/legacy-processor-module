@@ -87,7 +87,8 @@ class IDGenerator {
    */
   async updateNextBlock(nextStart) {
     try {
-      await this.db.query(QUERY_UPDATE_ID_SEQ, {
+      let informix = new Informix(dbOpts);
+      await informix.query(QUERY_UPDATE_ID_SEQ, {
         seqName: this.seqName,
         nextStart
       });
