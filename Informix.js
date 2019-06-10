@@ -154,7 +154,7 @@ class InformixService {
         logger.debug(`executing statement ${template}`);
         cursor = await stmt.exec(paramValues);
       } else {
-        cursor = await db.query(sql);
+        cursor = awaidb.query(sql);
       }
 
       result = await cursor.fetchAll();
