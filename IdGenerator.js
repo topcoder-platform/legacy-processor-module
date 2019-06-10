@@ -5,6 +5,19 @@ const logger = require("./common/logger");
 const util = require("util");
 const _ = require("lodash");
 const Mutex = require("async-mutex").Mutex;
+const Informix = require("./Informix");
+const config = require("config");
+
+// db informix option
+const dbOpts = {
+  database: DB_ID_NAME,
+  username: config.DB_USERNAME,
+  password: config.DB_PASSWORD,
+  pool: {
+    min: 0,
+    max: 10
+  }
+};
 
 const QUERY_GET_ID_SEQ =
   "select next_block_start, block_size from id_sequences where name = @seqName@";
@@ -21,7 +34,6 @@ class IDGenerator {
    * @param {String} seqName sequence name
    */
   constructor(db, seqName) {
-    this.db = db;
     this.seqName = seqName;
     this._availableId = 0;
     this.mutex = new Mutex();
@@ -52,7 +64,8 @@ class IDGenerator {
    * @private
    */
   async getNextBlock() {
-    const result = await this.db.query(QUERY_GET_ID_SEQ, {
+    let informix = new Informix(dbOpts);
+    const result = await informix.db.query(QUERY_GET_ID_SEQ, {
       seqName: this.seqName
     });
     if (!_.isArray(result) || _.isEmpty(result)) {
