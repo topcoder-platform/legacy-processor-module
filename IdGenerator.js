@@ -33,7 +33,7 @@ class IDGenerator {
    * @param {Informix} db database
    * @param {String} seqName sequence name
    */
-  constructor(db, seqName) {
+  constructor(seqName) {
     this.seqName = seqName;
     this._availableId = 0;
     this.mutex = new Mutex();
