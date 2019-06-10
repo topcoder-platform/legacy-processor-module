@@ -134,7 +134,7 @@ class InformixService {
   //   }
   //   return result;
   // }
-  async getQuery(sql, params) {
+  async getQuery(db, sql, params) {
     let cursor = null;
     let stmt = null;
     let result = null;
@@ -146,12 +146,15 @@ class InformixService {
           `preparing sql template '${template}' with param values [${paramValues.join()}]`
         );
 
-        logger.debug(`using db connection: ${JSON.stringify(this.db)}`);
-        stmt = await this.db.prepare(template);
+        logger.debug("==============");
+        logger.debug(`${this.db}`);
+        logger.debug("==============");
+        logger.debug(`${db}`);
+        stmt = await db.prepare(template);
         logger.debug(`executing statement ${template}`);
         cursor = await stmt.exec(paramValues);
       } else {
-        cursor = await this.db.query(sql);
+        cursor = await db.query(sql);
       }
 
       result = await cursor.fetchAll();

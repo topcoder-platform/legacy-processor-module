@@ -216,7 +216,7 @@ async function getChallengeProperties(
   try {
     let informix = new Informix(dbOpts);
 
-    const result = await informix.getQuery(QUERY_GET_CHALLENGE_PROPERTIES, {
+    const result = await informix.getQuery(informix.db, QUERY_GET_CHALLENGE_PROPERTIES, {
       challengeId,
       userId,
       resourceRoleId,
