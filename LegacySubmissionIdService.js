@@ -30,6 +30,16 @@ const dbOpts = {
   }
 };
 
+const dbIOOpts = {
+  database: "informixoltp@informixoltp_tcp",
+  username: config.DB_USERNAME,
+  password: config.DB_PASSWORD,
+  pool: {
+    min: 0,
+    max: 10
+  }
+};
+
 //  let informix = new Informix(dbOpts);
 
 let idUploadGen = new IDGenerator(config.ID_SEQ_UPLOAD);
@@ -233,7 +243,11 @@ async function getMMChallengeProperties(challengeId, userId) {
  * @param {Number} submissionTime the submission timestamp
  * @private
  */
-async function addMMSubmission(ctx, challengeId, userId, submissionTime) {
+async function addMMSubmission(challengeId, userId, submissionTime) {
+  // dbIOOpts
+  let informix = new Informix(dbOpts);
+  let ctx = informix.createContext();
+  
   try{
     let [
       roundId,
@@ -316,9 +330,12 @@ async function addMMSubmission(ctx, challengeId, userId, submissionTime) {
       `insert long_submission with params : ${JSON.stringify(lsParams)}`
     );
     await informix.query(ctx, QUERY_INSERT_LONG_SUBMISSION, lsParams);  
+    await ctx.commit();
   } catch (e) {
-    logger.error(e);
+    await ctx.rollback();
     throw e;
+  } finally {
+    await ctx.end();
   }
 }
 
@@ -445,7 +462,7 @@ async function addSubmission(
 
       if (isMM) {
         // Handle MM challenge
-        await addMMSubmission(ctx, challengeId, userId, submissionTime);
+        await addMMSubmission(challengeId, userId, submissionTime);
       }
       patchObject = { legacySubmissionId: submissionId };
     }
