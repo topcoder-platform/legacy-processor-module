@@ -139,6 +139,7 @@ class InformixService {
     let stmt = null;
     let result = null;
     try {
+      logger.debug(`==== ${params}`)
       if (_.isObject(params)) {
         const [template, paramValues] = this._processSql(sql, params);
 
@@ -154,7 +155,7 @@ class InformixService {
         logger.debug(`executing statement ${template}`);
         cursor = await stmt.exec(paramValues);
       } else {
-        cursor = awaidb.query(sql);
+        cursor = await db.query(sql);
       }
 
       result = await cursor.fetchAll();
