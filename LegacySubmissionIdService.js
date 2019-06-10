@@ -207,7 +207,6 @@ async function getChallengeProperties(
  */
 async function getMMChallengeProperties(challengeId, userId) {
   let informix = new Informix(dbOpts);
-
   const result = await informix.query(QUERY_GET_MMCHALLENGE_PROPERTIES, {
     challengeId,
     userId
@@ -246,7 +245,7 @@ async function addMMSubmission(ctx, challengeId, userId, submissionTime) {
     logger.debug(`get mm challenge properties roundId: ${roundId} componentId: ${componentId} 
      componentStateId: ${componentStateId} numSubmissions: ${numSubmissions} points: ${points}`);
   
-    const rrResult = await informix.query(ctx, QUERY_GET_MM_ROUND_REGISTRATION, {
+    const rrResult = await informix.query(QUERY_GET_MM_ROUND_REGISTRATION, {
       roundId,
       userId
     });
@@ -420,6 +419,7 @@ async function addSubmission(
         ...audits
       };
       logger.debug(`insert submission with params : ${JSON.stringify(params)}`);
+      
       await informix.query(ctx, QUERY_INSERT_SUBMISSION, params);
       params = {
         submissionId,
@@ -428,10 +428,12 @@ async function addSubmission(
         submissionTypeId: constant.SUBMISSION_TYPE[submissionType].id,
         ...audits
       };
+      
       logger.debug(
         `insert resource submission with params : ${JSON.stringify(params)}`
       );
       await informix.query(ctx, QUERY_INSERT_RESOURCE_SUBMISSION, params);
+      
       if (!isAllowMultipleSubmission) {
         logger.debug(
           `delete previous submission for challengeId: ${challengeId} resourceId: ${resourceId} uploadId:${uploadId}`
@@ -591,7 +593,6 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
 
     // Get initial_score from submission table
     let result = await informix.query(
-      ctx,
       QUERY_GET_SUBMISSION_INITIAL_SCORE,
       { submissionId }
     );
