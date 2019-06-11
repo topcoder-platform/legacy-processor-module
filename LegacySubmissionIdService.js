@@ -877,15 +877,13 @@ async function updateUpload(
   submissionType,
   submissionId
 ) {
-  let informix = new Informix(dbOpts);
-  let ctx = informix.createContext();
+  let dbConnection = getInformixConnection(dbOpts);
+  let ctx = createContext(dbConnection);
+
   try {
     await ctx.begin();
     let sql;
     let params;
-
-    let dbConnection = getInformixConnection(dbOpts);
-    let ctx = createContext(dbConnection);
 
     if (submissionId > 0) {
       sql = QUERY_UPDATE_UPLOAD_BY_SUBMISSION_ID;
