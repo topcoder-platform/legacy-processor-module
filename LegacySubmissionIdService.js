@@ -510,7 +510,7 @@ async function addSubmission(
       phaseTypeId,
       challengeTypeId
     ] = await getChallengeProperties(
-      dbConnection,
+      ctx,
       challengeId,
       userId,
       constant.SUBMISSION_TYPE[submissionType].roleId,
@@ -675,7 +675,7 @@ async function updateProvisionalScore(
     await ctx.begin();
 
     // Query componentStateId
-    const [, , componentStateId] = await getMMChallengeProperties(
+    const [, , componentStateId] = await getMMChallengeProperties(ctx,
       challengeId,
       userId
     );
@@ -893,7 +893,7 @@ async function updateUpload(
       };
     } else {
       logger.warn("no valid submission id");
-      const [resourceId] = await getChallengeProperties(
+      const [resourceId] = await getChallengeProperties(ctx,
         challengeId,
         userId,
         constant.SUBMISSION_TYPE[submissionType].roleId,
