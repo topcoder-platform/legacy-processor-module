@@ -94,6 +94,7 @@ class IDGenerator {
       this._nextId = --result[0][0];
       this._availableId = result[0][1];
     } catch (e) {
+      logger.error(util.inspect(e));
       throw e;
     }
   }
