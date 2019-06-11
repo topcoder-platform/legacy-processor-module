@@ -8,17 +8,6 @@ const config = require("config");
 const Mutex = require("async-mutex").Mutex;
 const { getInformixConnection, createContext, query } = require("./Informix");
 
-// db informix option
-const dbOpts = {
-  database: config.DB_ID_NAME,
-  username: config.DB_USERNAME,
-  password: config.DB_PASSWORD,
-  pool: {
-    min: 0,
-    max: 10
-  }
-};
-
 const QUERY_GET_ID_SEQ =
   "select next_block_start, block_size from id_sequences where name = @seqName@";
 const QUERY_UPDATE_ID_SEQ =
