@@ -86,10 +86,10 @@ const QUERY_UPDATE_UPLOAD = `update upload set url = @url@ where
 // The query to get MM challenge properties
 const QUERY_GET_MMCHALLENGE_PROPERTIES = `select rc.round_id, rc.component_id, lcs.long_component_state_id, NVL(lcs.submission_number,0) as submission_number, NVL(lcs.points,0) as points, r.rated_ind
   from project p
-  join project_info pi56 on p.project_id = ? and p.project_id = pi56.project_id and pi56.project_info_type_id = 56 and p.project_category_id=37
+  join project_info pi56 on p.project_id = @challengeId@ and p.project_id = pi56.project_id and pi56.project_info_type_id = 56 and p.project_category_id=37
   join informixoltp:round_component rc on rc.round_id =pi56.value
   join informixoltp:round r on rc.round_id=r.round_id
-  left join informixoltp:long_component_state lcs on lcs.coder_id= ? and lcs.round_id = rc.round_id and lcs.component_id = rc.component_id`;
+  left join informixoltp:long_component_state lcs on lcs.coder_id= @userId@ and lcs.round_id = rc.round_id and lcs.component_id = rc.component_id`;
 
 // The query to get from "round_registration" table
 const QUERY_GET_MM_ROUND_REGISTRATION = `
