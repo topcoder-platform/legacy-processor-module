@@ -5,7 +5,7 @@ const logger = require("./common/logger");
 const util = require("util");
 const _ = require("lodash");
 const Mutex = require("async-mutex").Mutex;
-const Informix = require("./Informix");
+const { getInformixConnection, createContext, query } = require("./Informix");
 const config = require("config");
 
 // db informix option
@@ -64,9 +64,12 @@ class IDGenerator {
    * @private
    */
   async getNextBlock() {
+    let dbConnection = getInformixConnection(dbOpts);
+    let ctx = createContext(dbConnection);
+
     try {
-      let informix = new Informix(dbOpts);
-      const result = await informix.getQuery(QUERY_GET_ID_SEQ, {
+      await ctx.begin();
+      const result = await query(ctx, QUERY_GET_ID_SEQ, {
         seqName: this.seqName
       });
       if (!_.isArray(result) || _.isEmpty(result)) {
@@ -76,6 +79,8 @@ class IDGenerator {
       this._availableId = result[0][1];
     } catch (e) {
       throw e;
+    } finally {
+      await ctx.end();
     }
   }
 
@@ -85,12 +90,12 @@ class IDGenerator {
    * @private
    */
   async updateNextBlock(nextStart) {
-    let informix = new Informix(dbOpts);
-    let ctx = informix.createContext();
+    let dbConnection = getInformixConnection(dbOpts);
+    let ctx = createContext(dbConnection);
     try {
       await ctx.begin();
       
-      await informix.executeQuery(ctx, QUERY_UPDATE_ID_SEQ, {
+      await query(ctx, QUERY_UPDATE_ID_SEQ, {
         seqName: this.seqName,
         nextStart
       });
