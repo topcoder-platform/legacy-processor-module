@@ -458,6 +458,10 @@ async function addMMSubmission(
         `insert long_submission with params : ${JSON.stringify(lsParams)}`
       );
       await query(ctx, QUERY_INSERT_LONG_SUBMISSION, lsParams);
+
+      patchObject = {
+        legacySubmissionId: submissionId
+      };
     }
 
     await ctx.commit();
