@@ -7,7 +7,6 @@ const _ = require("lodash");
 const config = require("config");
 const Mutex = require("async-mutex").Mutex;
 const { getInformixConnection, createContext, query } = require("./Informix");
-const config = require("config");
 
 // db informix option
 const dbOpts = {
