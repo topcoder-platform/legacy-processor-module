@@ -506,7 +506,7 @@ async function addSubmission(
       phaseTypeId,
       challengeTypeId
     ] = await getChallengeProperties(
-      ctx,
+      dbConnection,
       challengeId,
       userId,
       constant.SUBMISSION_TYPE[submissionType].roleId,
@@ -521,6 +521,7 @@ async function addSubmission(
       isAllowMultipleSubmission = true;
     }
 
+    logger.debug("Getting uploadId");
     const uploadId = await idUploadGen.getNextId();
     logger.info(`uploadId = ${uploadId}`);
 

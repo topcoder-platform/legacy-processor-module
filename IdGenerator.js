@@ -65,11 +65,9 @@ class IDGenerator {
    */
   async getNextBlock() {
     let dbConnection = getInformixConnection(dbOpts);
-    let ctx = createContext(dbConnection);
 
     try {
-      await ctx.begin();
-      const result = await query(ctx, QUERY_GET_ID_SEQ, {
+      const result = await query(dbConnection, QUERY_GET_ID_SEQ, {
         seqName: this.seqName
       });
       if (!_.isArray(result) || _.isEmpty(result)) {
@@ -79,8 +77,6 @@ class IDGenerator {
       this._availableId = result[0][1];
     } catch (e) {
       throw e;
-    } finally {
-      await ctx.end();
     }
   }
 
