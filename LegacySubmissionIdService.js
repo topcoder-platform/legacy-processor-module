@@ -37,8 +37,7 @@ let idSubmissionGen = new IDGenerator(config.ID_SEQ_SUBMISSION);
 let componentStateGen = new IDGenerator(config.ID_SEQ_COMPONENT_STATE);
 
 // The query to insert into "upload" table
-const QUERY_INSERT_UPLOAD =
-  `insert into upload(upload_id, project_id, project_phase_id, resource_id,
+const QUERY_INSERT_UPLOAD = `insert into upload(upload_id, project_id, project_phase_id, resource_id,
   upload_type_id, upload_status_id, parameter, url, create_user, create_date, modify_user, modify_date)
   values(@uploadId@, @challengeId@, @phaseId@, @resourceId@, @uploadType@, @uploadStatusId@,
   @parameter@,@url@, @createUser@, @createDate@, @modifyUser@, @modifyDate@)`;
@@ -54,16 +53,14 @@ const QUERY_INSERT_RESOURCE_SUBMISSION = `insert into resource_submission (resou
   values(@resourceId@, @submissionId@, @createUser@, @createDate@, @modifyUser@, @modifyDate@)`;
 
 // The query to mark record as deleted in "submission" table
-const QUERY_DELETE_SUBMISSION =
-  `update submission set submission_status_id =${
+const QUERY_DELETE_SUBMISSION = `update submission set submission_status_id =${
   constant.SUBMISSION_STATUS["Deleted"]
 }
    where upload_id in (select upload_id from upload where project_id=@challengeId@ and resource_id=@resourceId@
    and upload_status_id=${constant.UPLOAD_STATUS["Deleted"]})`;
 
 // The query to mark record as deleted in "upload" table
-const QUERY_DELETE_UPLOAD =
-  `update upload set upload_status_id =${
+const QUERY_DELETE_UPLOAD = `update upload set upload_status_id =${
   constant.UPLOAD_STATUS["Deleted"]
 }
   where project_id=@challengeId@ and resource_id=@resourceId@ and upload_id <> @uploadId@`;
@@ -77,13 +74,11 @@ const QUERY_GET_CHALLENGE_PROPERTIES = `select r.resource_id, pi28.value, pp.pha
   and pi28.project_info_type_id = 28 and p.project_id = @challengeId@`;
 
 // The query to update url in "upload" table
-const QUERY_UPDATE_UPLOAD_BY_SUBMISSION_ID =
-  `update upload set url = @url@ where
+const QUERY_UPDATE_UPLOAD_BY_SUBMISSION_ID = `update upload set url = @url@ where
   upload_id in (select s.upload_id from submission s, upload uu where uu.upload_id = s.upload_id and s.submission_id = @submissionId@)`;
 
 // The query to update url in "upload" table
-const QUERY_UPDATE_UPLOAD =
-  `update upload set url = @url@ where
+const QUERY_UPDATE_UPLOAD = `update upload set url = @url@ where
   upload_id in (select upload_id from
    (select first 1 upload_id from upload where project_id = @challengeId@ and project_phase_id = @phaseId@
    and resource_id = @resourceId@ and upload_status_id = 1 order by create_date desc))`;
@@ -97,13 +92,11 @@ const QUERY_GET_MMCHALLENGE_PROPERTIES = `select rc.round_id, rc.component_id, l
   left join informixoltp:long_component_state lcs on lcs.coder_id= @userId@ and lcs.round_id = rc.round_id and lcs.component_id = rc.component_id`;
 
 // The query to get from "round_registration" table
-const QUERY_GET_MM_ROUND_REGISTRATION =
-  `
+const QUERY_GET_MM_ROUND_REGISTRATION = `
   select rr.round_id, rr.coder_id from informixoltp:round_registration rr where rr.round_id=@roundId@ and rr.coder_id=@userId@`;
 
 // The query to insert into "round_registration" table
-const QUERY_INSERT_MM_ROUND_REGISTRATION =
-  `
+const QUERY_INSERT_MM_ROUND_REGISTRATION = `
   insert into informixoltp:round_registration (round_id, coder_id, timestamp, eligible, team_id)
   values(@roundId@, @userId@, current, @eligible@, null)`;
 
@@ -113,29 +106,24 @@ const QUERY_INSERT_LONG_SUBMISSION = `insert into informixoltp:long_submission(l
   @submissionText@, @openTime@, @submitTime@, @submissionPoints@, @languageId@, @isExample@)`;
 
 // The query to update submission_points in "long_submission" table
-const QUERY_UPDATE_LONG_SUBMISSION_SCORE =
-  `update informixoltp:long_submission set submission_points=@reviewScore@ where long_component_state_id=@componentStateId@ and submission_number=@submissionNumber@ and example=0`;
+const QUERY_UPDATE_LONG_SUBMISSION_SCORE = `update informixoltp:long_submission set submission_points=@reviewScore@ where long_component_state_id=@componentStateId@ and submission_number=@submissionNumber@ and example=0`;
 
 // The query to insert into "long_component_state" table
-const QUERY_INSERT_LONG_COMPONENT_STATE =
-  `
+const QUERY_INSERT_LONG_COMPONENT_STATE = `
   insert into informixoltp:long_component_state
   (long_component_state_id, round_id, coder_id, component_id, points, status_id, submission_number, example_submission_number)
   values(@componentStateId@, @roundId@, @userId@, @componentId@, @points@, @statusId@, @numSubmissions@, @numExampleSubmissions@)`;
 
 // The query to update submission_number in "long_component_state" table
-const QUERY_UPDATE_LONG_COMPONENT_STATE_NUN_SUBMISSIONS =
-  `update informixoltp:long_component_state set submission_number=@numSubmissions@
+const QUERY_UPDATE_LONG_COMPONENT_STATE_NUN_SUBMISSIONS = `update informixoltp:long_component_state set submission_number=@numSubmissions@
   where long_component_state_id=@componentStateId@`;
 
 // The query to update points in "long_component_state" table
-const QUERY_UPDATE_LONG_COMPONENT_STATE_POINTS =
-  `update informixoltp:long_component_state set points=@reviewScore@
+const QUERY_UPDATE_LONG_COMPONENT_STATE_POINTS = `update informixoltp:long_component_state set points=@reviewScore@
   where long_component_state_id=@componentStateId@`;
 
 // The query to get user's submission number in a challenge
-const QUERY_GET_SUBMISSION_NUMBER =
-  `
+const QUERY_GET_SUBMISSION_NUMBER = `
   select count(*)
   from submission s, upload u, resource r
   where s.upload_id = u.upload_id and u.resource_id = r.resource_id and u.project_id = r.project_id
@@ -147,39 +135,31 @@ const QUERY_GET_SUBMISSION_NUMBER =
 const QUERY_GET_SUBMISSION_INITIAL_SCORE = `select initial_score from submission where submission_id = @submissionId@`;
 
 // The query to update initial_score in "submission" table
-const QUERY_UPDATE_SUBMISSION_INITIAL_REVIEW_SCORE =
-  `update submission set initial_score=@reviewScore@ where submission_id=@submissionId@`;
+const QUERY_UPDATE_SUBMISSION_INITIAL_REVIEW_SCORE = `update submission set initial_score=@reviewScore@ where submission_id=@submissionId@`;
 
 // The query to update final_score in "submission" table
-const QUERY_UPDATE_SUBMISSION_FINAL_REVIEW_SCORE =
-  `update submission set final_score=@finalScore@ where submission_id=@submissionId@`;
+const QUERY_UPDATE_SUBMISSION_FINAL_REVIEW_SCORE = `update submission set final_score=@finalScore@ where submission_id=@submissionId@`;
 
 // The query to check where user result exists in "long_comp_result" table
-const QUERY_CHECK_COMP_RESULT_EXISTS =
-  `select count(*) from informixoltp:long_comp_result where round_id=@roundId@ and coder_id=@userId@`;
+const QUERY_CHECK_COMP_RESULT_EXISTS = `select count(*) from informixoltp:long_comp_result where round_id=@roundId@ and coder_id=@userId@`;
 
 // The query to get user's last entry from "long_comp_result" table
-const QUERY_GET_LAST_COMP_RESULT =
-  `select first 1 new_rating, new_vol from informixoltp:long_comp_result where round_id < @roundId@ and coder_id=@userId@ and rated_ind = 1 order by round_id desc`;
+const QUERY_GET_LAST_COMP_RESULT = `select first 1 new_rating, new_vol from informixoltp:long_comp_result where round_id < @roundId@ and coder_id=@userId@ and rated_ind = 1 order by round_id desc`;
 
 // The query to insert into "long_comp_result" table
-const QUERY_INSERT_COMP_RESULT =
-  `insert into informixoltp:long_comp_result
+const QUERY_INSERT_COMP_RESULT = `insert into informixoltp:long_comp_result
   (round_id, coder_id, point_total, attended, placed, system_point_total, old_rating, new_rating, old_vol, new_vol, rated_ind, advanced)
   values(@roundId@, @userId@, @initialScore@, 'N', 0, @finalScore@, @oldRating@, null, @oldVol@, null, @ratedInd@, 'N')`;
 
 // The query to update point_total and system_point_total in "long_comp_result" table
-const QUERY_UPDATE_COMP_RESULT_SCORE =
-  `update informixoltp:long_comp_result
+const QUERY_UPDATE_COMP_RESULT_SCORE = `update informixoltp:long_comp_result
   set point_total=@initialScore@, system_point_total=@finalScore@, old_rating=@oldRating@, old_vol=@oldVol@, rated_ind=@ratedInd@ where round_id=@roundId@ and coder_id=@userId@`;
 
 // The query to get result from "long_comp_result" table ordered by scores
-const QUERY_GET_COMP_RESULT =
-  `select coder_id, placed from informixoltp:long_comp_result where round_id=@roundId@ order by system_point_total desc, point_total desc`;
+const QUERY_GET_COMP_RESULT = `select coder_id, placed from informixoltp:long_comp_result where round_id=@roundId@ order by system_point_total desc, point_total desc`;
 
 // The query to update placed in "long_comp_result" table
-const QUERY_UPDATE_COMP_RESULT_PLACE =
-  `update informixoltp:long_comp_result set placed = @placed@ where round_id=@roundId@ and coder_id=@userId@`;
+const QUERY_UPDATE_COMP_RESULT_PLACE = `update informixoltp:long_comp_result set placed = @placed@ where round_id=@roundId@ and coder_id=@userId@`;
 
 /**
  * Get resourceId, isAllowMultipleSubmission, phaseTypeId and challengeTypeId
@@ -586,14 +566,14 @@ async function addSubmission(
       uploadType,
       url,
       uploadStatusId: constant.UPLOAD_STATUS["Active"],
-        parameter: "N/A",
-        ...audits
+      parameter: "N/A",
+      ...audits
     };
 
     logger.debug(`insert upload with params : ${JSON.stringify(params)}`);
 
     await query(ctx, QUERY_INSERT_UPLOAD, params);
-    
+
     if (uploadType === constant.UPLOAD_TYPE["Final Fix"]) {
       logger.debug(`final fix upload, only insert upload`);
       patchObject = {
@@ -604,8 +584,8 @@ async function addSubmission(
         submissionId,
         uploadId,
         submissionStatusId: constant.SUBMISSION_STATUS["Active"],
-          submissionTypeId: constant.SUBMISSION_TYPE[submissionType].id,
-          ...audits
+        submissionTypeId: constant.SUBMISSION_TYPE[submissionType].id,
+        ...audits
       };
       logger.debug(`insert submission with params : ${JSON.stringify(params)}`);
 
@@ -614,8 +594,8 @@ async function addSubmission(
         submissionId,
         resourceId,
         submissionStatusId: constant.SUBMISSION_STATUS["Active"],
-          submissionTypeId: constant.SUBMISSION_TYPE[submissionType].id,
-          ...audits
+        submissionTypeId: constant.SUBMISSION_TYPE[submissionType].id,
+        ...audits
       };
 
       logger.debug(
@@ -904,11 +884,8 @@ async function updateUpload(
     let sql;
     let params;
 
-  let dbConnection = getInformixConnection(dbOpts);
-  let ctx = createContext(dbConnection);
-
-  try {
-    await ctx.begin();
+    let dbConnection = getInformixConnection(dbOpts);
+    let ctx = createContext(dbConnection);
 
     if (submissionId > 0) {
       sql = QUERY_UPDATE_UPLOAD_BY_SUBMISSION_ID;
