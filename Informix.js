@@ -13,7 +13,6 @@ let instances = {};
  */
 function getInformixConnection(opts) {
   let { database, username, password } = opts;
-
   let key = `${database}-${username}-${password}`;
 
   if (instances[key]) {

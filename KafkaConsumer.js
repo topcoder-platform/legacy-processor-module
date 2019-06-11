@@ -80,7 +80,9 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
 
     return submissionService
       .handle(messageJSON)
-      .then(() => consumer.commitOffset({ topic, partition, offset: m.offset }))
+      .then(() => consumer.commitOffset({
+        topic, partition, offset: m.offset
+      }))
       .catch(err => {
         logger.error(`Failed to handle ${messageInfo}: ${err.message}`)
         logger.error(util.inspect(err));
@@ -93,8 +95,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
  * @private
  */
 function check() {
-  if (
-    !consumer.client.initialBrokers &&
+  if (!consumer.client.initialBrokers &&
     !consumer.client.initialBrokers.length
   ) {
     return false;
@@ -115,13 +116,11 @@ function check() {
  */
 function startConsumer(submissionService, topics) {
   consumer
-    .init([
-      {
-        subscriptions: topics,
-        handler: async (messageSet, topic, partition) =>
-          handleMessages(messageSet, topic, partition, submissionService)
-      }
-    ])
+    .init([{
+      subscriptions: topics,
+      handler: async(messageSet, topic, partition) =>
+        handleMessages(messageSet, topic, partition, submissionService)
+    }])
     .then(() => {
       healthcheck.init([check]);
       logger.debug("Consumer initialized successfully");
