@@ -10,7 +10,11 @@ const m2mAuth = require("tc-core-library-js").auth.m2m;
 
 const logger = require("./common/logger");
 const constant = require("./common/constant");
-const { getInformixConnection, createContext, query } = require("./Informix");
+const {
+  getInformixConnection,
+  createContext,
+  query
+} = require("./Informix");
 const IDGenerator = require("./IdGenerator");
 
 const _ = require("lodash");
@@ -779,7 +783,9 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
     const params = {
       roundId,
       userId,
-      initialScore,
+      initialScore: _.isNaN(initialScore) ? {
+        replace: 0
+      } : initialScore;,
       finalScore,
       ratedInd
     };
@@ -803,16 +809,16 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
     }
 
     if (userLastCompResult) {
-      params.oldRating = _.isFinite(userLastCompResult[0])
-        ? userLastCompResult[0]
-        : {
-            replace: "null"
-          };
-      params.oldVol = _.isFinite(userLastCompResult[1])
-        ? userLastCompResult[1]
-        : {
-            replace: "null"
-          };
+      params.oldRating = _.isFinite(userLastCompResult[0]) ?
+        userLastCompResult[0] :
+        {
+          replace: "null"
+        };
+      params.oldVol = _.isFinite(userLastCompResult[1]) ?
+        userLastCompResult[1] :
+        {
+          replace: "null"
+        };
     } else {
       params.oldRating = {
         replace: "null"
