@@ -785,7 +785,7 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
       userId,
       initialScore: _.isNaN(initialScore) ? {
         replace: 0
-      } : initialScore;,
+      } : initialScore,
       finalScore,
       ratedInd
     };
