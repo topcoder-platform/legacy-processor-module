@@ -7,6 +7,7 @@ const Axios = require('axios');
 const config = require('config');
 const Flatted = require('flatted');
 const m2mAuth = require('tc-core-library-js').auth.m2m;
+const moment = require('moment');
 
 const logger = require('./common/logger');
 const constant = require('./common/constant');
@@ -277,9 +278,9 @@ async function addMMSubmission(
     let patchObject;
     const audits = {
       createUser: userId,
-      createDate: submissionTime,
+      createDate: moment(submissionTime).format('YYYY-MM-DD HH:mm:ss'),
       modifyUser: userId,
-      modifyDate: submissionTime
+      modifyDate: moment(submissionTime).format('YYYY-MM-DD HH:mm:ss')
     };
     let params = {
       uploadId,
@@ -356,7 +357,7 @@ async function addMMSubmission(
         const rrParams = {
           roundId,
           userId,
-          timestamp: submissionTime,
+          timestamp: moment(submissionTime).format('YYYY-MM-DD HH:mm:ss'),
           eligible: 1,
           teamId: {
             replace: 'null'
@@ -492,9 +493,9 @@ async function addSubmission(newSubmissionId, challengeId, userId, phaseId, url,
 
     const audits = {
       createUser: userId,
-      createDate: submissionTime,
+      createDate: moment(submissionTime).format('YYYY-MM-DD HH:mm:ss'),
       modifyUser: userId,
-      modifyDate: submissionTime
+      modifyDate: moment(submissionTime).format('YYYY-MM-DD HH:mm:ss')
     };
 
     let params = {
