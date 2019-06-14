@@ -16,7 +16,8 @@ const sampleSubmission = {
   resource: 'submission',
   url: 'http://content.topcoder.com/some/path',
   type: 'Contest Submission',
-  submissionPhaseId: 95245
+  submissionPhaseId: 95245,
+  created: '2018-02-16T00:00:00',
 }
 
 // The good studio sample submission
@@ -72,7 +73,8 @@ const sampleMMSubmission = {
   url: 'http://content.topcoder.com/some/path',
   type: 'Contest Submission',
   submissionPhaseId: 95311,
-  updated: '2018-02-16T00:00:00'
+  updated: '2018-02-16T00:00:00',
+  created: '2018-02-16T00:00:00'
 }
 
 // The good sample MM submission
@@ -84,7 +86,8 @@ const sampleMMSubmission2 = {
   url: 'http://content.topcoder.com/some/path',
   type: 'Contest Submission',
   submissionPhaseId: 95311,
-  updated: '2018-02-16T00:00:00'
+  updated: '2018-02-16T00:00:00',
+  created: '2018-02-16T00:00:00',
 }
 
 // The good mm provisional review
