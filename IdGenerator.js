@@ -6,7 +6,11 @@ const util = require("util");
 const _ = require("lodash");
 const config = require("config");
 const Mutex = require("async-mutex").Mutex;
-const { getInformixConnection, createContext, query } = require("./Informix");
+const {
+  getInformixConnection,
+  createContext,
+  query
+} = require("./Informix");
 
 const QUERY_GET_ID_SEQ =
   "select next_block_start, block_size from id_sequences where name = @seqName@";
@@ -75,7 +79,7 @@ class IDGenerator {
       const result = await query(dbConnection, QUERY_GET_ID_SEQ, {
         seqName: this.seqName
       });
-      
+
       if (!_.isArray(result) || _.isEmpty(result)) {
         throw new Error(`null or empty result for ${this.seqName}`);
       }
@@ -97,7 +101,7 @@ class IDGenerator {
     let ctx = createContext(dbConnection);
     try {
       await ctx.begin();
-      
+
       await query(ctx, QUERY_UPDATE_ID_SEQ, {
         seqName: this.seqName,
         nextStart
