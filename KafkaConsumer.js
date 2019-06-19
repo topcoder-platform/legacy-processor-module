@@ -1,13 +1,13 @@
 /**
  * The Kafka consumer service.
  */
-const util = require("util");
-const config = require("config");
-const Kafka = require("no-kafka");
-const healthcheck = require("topcoder-healthcheck-dropin");
-const logger = require("./common/logger");
+const util = require('util');
+const config = require('config');
+const Kafka = require('no-kafka');
+const healthcheck = require('topcoder-healthcheck-dropin');
+const logger = require('./common/logger');
 
-global.Promise = require("bluebird");
+global.Promise = require('bluebird');
 
 /**
  * Get kafka options.
@@ -44,48 +44,50 @@ const consumer = new Kafka.GroupConsumer(getKafkaOptions());
  */
 const handleMessages = (messageSet, topic, partition, submissionService) =>
   Promise.each(messageSet, m => {
-    const message = m.message.value ? m.message.value.toString("utf8") : null;
-    const messageInfo = `Topic: ${topic}; Partition: ${partition}; Offset: ${m.offset}; Message: ${message}.`
+    const message = m.message.value ? m.message.value.toString('utf8') : null;
+    const messageInfo = `Topic: ${topic}; Partition: ${partition}; Offset: ${m.offset}; Message: ${message}.`;
     logger.info(`Handle Kafka event message; ${messageInfo}`);
 
     if (!message) {
-      logger.error('Skipped null or empty event')
-      return
+      logger.error('Skipped null or empty event');
+      return;
     }
 
     let messageJSON;
     try {
       messageJSON = JSON.parse(message);
     } catch (e) {
-      logger.error("Skipped Invalid message JSON");
+      logger.error('Skipped Invalid message JSON');
       logger.error(e);
       // ignore the message
       return;
     }
 
     if (!messageJSON) {
-      logger.error('Skipped null or empty event')
-      return
+      logger.error('Skipped null or empty event');
+      return;
     }
 
     if (messageJSON.topic !== topic) {
-      logger.error(
-        `Skipped the message topic "${
-          messageJSON.topic
-        }" doesn't match the Kafka topic ${topic}.`
-      );
+      logger.error(`Skipped the message topic "${messageJSON.topic}" doesn't match the Kafka topic ${topic}.`);
       // ignore the message
       return;
     }
 
     return submissionService
       .handle(messageJSON)
-      .then(() => consumer.commitOffset({
-        topic, partition, offset: m.offset
-      }))
+      .then(() => {})
       .catch(err => {
-        logger.error(`Failed to handle ${messageInfo}: ${err.message}`)
+        logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
         logger.error(util.inspect(err));
+      })
+      .finally(() => {
+        logger.debug(`committing offset ${m.offset} for partition ${partition} topic ${topic}`);
+        consumer.commitOffset({
+          topic,
+          partition,
+          offset: m.offset
+        });
       });
   });
 
@@ -95,9 +97,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
  * @private
  */
 function check() {
-  if (!consumer.client.initialBrokers &&
-    !consumer.client.initialBrokers.length
-  ) {
+  if (!consumer.client.initialBrokers && !consumer.client.initialBrokers.length) {
     return false;
   }
   let connected = true;
@@ -116,14 +116,15 @@ function check() {
  */
 function startConsumer(submissionService, topics) {
   consumer
-    .init([{
-      subscriptions: topics,
-      handler: async(messageSet, topic, partition) =>
-        handleMessages(messageSet, topic, partition, submissionService)
-    }])
+    .init([
+      {
+        subscriptions: topics,
+        handler: async (messageSet, topic, partition) => handleMessages(messageSet, topic, partition, submissionService)
+      }
+    ])
     .then(() => {
       healthcheck.init([check]);
-      logger.debug("Consumer initialized successfully");
+      logger.debug('Consumer initialized successfully');
     })
     .catch(err => logger.error(err));
 
