@@ -76,18 +76,21 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
 
     return submissionService
       .handle(messageJSON)
-      .then(() => {})
+      .then(() =>
+        consumer.commitOffset({
+          topic,
+          partition,
+          offset: m.offset
+        })
+      )
       .catch(err => {
-        logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
-        logger.error(util.inspect(err));
-      })
-      .finally(() => {
-        logger.debug(`committing offset ${m.offset} for partition ${partition} topic ${topic}`);
         consumer.commitOffset({
           topic,
           partition,
           offset: m.offset
         });
+        logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
+        logger.error(util.inspect(err));
       });
   });
 
