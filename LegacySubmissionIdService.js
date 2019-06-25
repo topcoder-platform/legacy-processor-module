@@ -24,9 +24,10 @@ const dbOpts = {
   database: config.DB_NAME,
   host: config.DB_HOST,
   protocol: config.DB_PROTOCOL,
-  service: config.DB_SERVICE,
+  service: config.DB_PORT,
   username: config.DB_USERNAME,
-  password: config.DB_PASSWORD
+  password: config.DB_PASSWORD,
+  locale: config.DB_LOCALE
 };
 
 let idUploadGen = new IDGenerator(config.ID_SEQ_UPLOAD);

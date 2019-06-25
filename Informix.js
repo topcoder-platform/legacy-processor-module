@@ -75,8 +75,8 @@ class InformixContext {
    * @param {Object} opts The db options
    */
   constructor(opts) {
-    const { server, database, host, protocol, service, username, password } = opts;
-    this.connStr = `SERVER=${server};DATABASE=${database};HOST=${host};Protocol=${protocol};SERVICE=${service};UID=${username};PWD=${password};`;
+    const { server, database, host, protocol, port, username, password, locale } = opts;
+    this.connStr = `SERVER=${server};DATABASE=${database};HOST=${host};Protocol=${protocol};SERVICE=${port};UID=${username};PWD=${password};DB_LOCALE=${locale}`;
     logger.debug(this.connStr);
   }
 
