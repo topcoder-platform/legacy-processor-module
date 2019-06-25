@@ -31,16 +31,11 @@ function processSql(sql, params) {
     }
     const paramName = match[1];
     const paramValue = params[paramName];
-    const replace =
-      _.isObject(paramValue) && !_.isUndefined(paramValue.replace);
+    const replace = _.isObject(paramValue) && !_.isUndefined(paramValue.replace);
     if (params.hasOwnProperty(paramName)) {
-      template = template.replace(paramReg, replace ? paramValue.replace : "?");
+      template = template.replace(paramReg, replace ? paramValue.replace : '?');
     } else {
-      throw new Error(
-        `Not found param name ${paramName} in given params ${JSON.stringify(
-          params
-        )}.`
-      );
+      throw new Error(`Not found param name ${paramName} in given params ${JSON.stringify(params)}.`);
     }
     if (!replace) {
       paramValues.push(paramValue);
@@ -75,14 +70,14 @@ async function executeQuery(opts, sql, params) {
  * Informix context. A context has its own connection and transaction.
  */
 class InformixContext {
-
   /**
    * Constructor with db options.
    * @param {Object} opts The db options
    */
   constructor(opts) {
-    const { server, database, host, service, username, password } = opts;
-    this.connStr = `SERVER=${server};DATABASE=${database};HOST=${host};SERVICE=${service};UID=${username};PWD=${password};`;
+    const { server, database, host, protocol, service, username, password } = opts;
+    this.connStr = `SERVER=${server};DATABASE=${database};HOST=${host};Protocol=${protocol};SERVICE=${service};UID=${username};PWD=${password};`;
+    logger.debug(this.connStr);
   }
 
   /**
@@ -91,7 +86,7 @@ class InformixContext {
    */
   checkOpened() {
     if (!this.conn) {
-      throw new Error('Connection is not opened')
+      throw new Error('Connection is not opened');
     }
   }
 
@@ -107,7 +102,7 @@ class InformixContext {
         } else {
           resolve(conn);
         }
-      })
+      });
     });
 
     this.conn.beginTransactionSync();
@@ -126,9 +121,7 @@ class InformixContext {
 
     if (_.isObject(params)) {
       [template, paramValues] = processSql(sql, params);
-      logger.debug(
-        `sql template '${template}' with param values ${JSON.stringify(paramValues)}`
-      );
+      logger.debug(`sql template '${template}' with param values ${JSON.stringify(paramValues)}`);
     }
 
     const result = await this.conn.querySync(template, paramValues);
@@ -139,8 +132,8 @@ class InformixContext {
     }
 
     // Normalize number
-    const normalized = result.map((row) => {
-      return row.map((cell) => {
+    const normalized = result.map(row => {
+      return row.map(cell => {
         if (typeof cell !== 'string') {
           return cell;
         }
@@ -180,13 +173,13 @@ class InformixContext {
     }
 
     await new Promise((resolve, reject) => {
-      this.conn.close((err) => {
+      this.conn.close(err => {
         if (err) {
           reject(err);
         } else {
           resolve();
         }
-      })
+      });
     });
 
     this.conn = null;

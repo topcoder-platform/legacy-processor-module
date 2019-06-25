@@ -23,9 +23,10 @@ const dbOpts = {
   server: config.DB_SERVER,
   database: config.DB_NAME,
   host: config.DB_HOST,
+  protocol: config.DB_PROTOCOL,
   service: config.DB_SERVICE,
   username: config.DB_USERNAME,
-  password: config.DB_PASSWORD,
+  password: config.DB_PASSWORD
 };
 
 let idUploadGen = new IDGenerator(config.ID_SEQ_UPLOAD);
@@ -227,15 +228,7 @@ async function getMMChallengeProperties(ctx, challengeId, userId) {
  * @param {Number} submissionTime the submission timestamp
  * @private
  */
-async function addMMSubmission(
-  newSubmissionId,
-  challengeId,
-  userId,
-  phaseId,
-  url,
-  submissionType,
-  submissionTime
-) {
+async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, url, submissionType, submissionTime) {
   const ctx = new InformixContext(dbOpts);
 
   try {
@@ -446,7 +439,6 @@ async function addMMSubmission(
  * @returns {Object} the patch object applied to Submission API
  */
 async function addSubmission(newSubmissionId, challengeId, userId, phaseId, url, submissionType, submissionTime, isMM) {
-
   const ctx = new InformixContext(dbOpts);
 
   try {
