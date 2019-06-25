@@ -1,26 +1,26 @@
 /**
  * The ID generator service
  */
-const logger = require("./common/logger");
-const util = require("util");
-const _ = require("lodash");
-const config = require("config");
-const Mutex = require("async-mutex").Mutex;
-const { InformixContext } = require("./Informix");
+const logger = require('./common/logger');
+const util = require('util');
+const _ = require('lodash');
+const config = require('config');
+const Mutex = require('async-mutex').Mutex;
+const { InformixContext } = require('./Informix');
 
-const QUERY_GET_ID_SEQ =
-  "select next_block_start, block_size from id_sequences where name = @seqName@";
-const QUERY_UPDATE_ID_SEQ =
-  "update id_sequences set next_block_start = @nextStart@ where name = @seqName@";
+const QUERY_GET_ID_SEQ = 'select next_block_start, block_size from id_sequences where name = @seqName@';
+const QUERY_UPDATE_ID_SEQ = 'update id_sequences set next_block_start = @nextStart@ where name = @seqName@';
 
 // db informix option
 const dbOpts = {
   server: config.DB_SERVER,
   database: config.DB_ID_NAME,
   host: config.DB_HOST,
-  service: config.DB_SERVICE,
+  protocol: config.DB_PROTOCOL,
+  port: config.DB_PORT,
   username: config.DB_USERNAME,
   password: config.DB_PASSWORD,
+  locale: config.DB_LOCALE
 };
 
 /**
@@ -45,7 +45,7 @@ class IDGenerator {
   async getNextId() {
     const release = await this.mutex.acquire();
     try {
-      logger.debug("Getting nextId");
+      logger.debug('Getting nextId');
       --this._availableId;
       logger.debug(`this._availableId = ${this._availableId}`);
 
@@ -86,7 +86,6 @@ class IDGenerator {
    * @private
    */
   async getNextBlock(ctx) {
-
     try {
       const result = await ctx.query(QUERY_GET_ID_SEQ, {
         seqName: this.seqName
@@ -116,7 +115,7 @@ class IDGenerator {
         nextStart
       });
     } catch (e) {
-      logger.error("Failed to update id sequence: " + this.seqName);
+      logger.error('Failed to update id sequence: ' + this.seqName);
       logger.error(util.inspect(e));
       throw e;
     }
