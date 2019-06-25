@@ -24,7 +24,7 @@ const dbOpts = {
   database: config.DB_NAME,
   host: config.DB_HOST,
   protocol: config.DB_PROTOCOL,
-  service: config.DB_PORT,
+  port: config.DB_PORT,
   username: config.DB_USERNAME,
   password: config.DB_PASSWORD,
   locale: config.DB_LOCALE
