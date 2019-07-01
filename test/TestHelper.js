@@ -5,17 +5,16 @@ const config = require('config')
 const should = require('should')
 const _ = require('lodash')
 
-const Informix = require('../Informix')
+const { executeQuery } = require("../Informix");
 
-const informix = new Informix({
+const opts = {
+  server: config.DB_SERVER,
   database: config.DB_NAME,
+  host: config.DB_HOST,
+  service: config.DB_SERVICE,
   username: config.DB_USERNAME,
   password: config.DB_PASSWORD,
-  pool: {
-    min: 0,
-    max: 10
-  }
-})
+};
 
 /**
  * Sleep with time from input
@@ -25,6 +24,15 @@ async function sleep (time) {
   await new Promise((resolve) => {
     setTimeout(resolve, time)
   })
+}
+
+/**
+ * Query informix.
+ * @param {String} sql the sql
+ * @param {Object} params the sql params
+ */
+async function queryInformix(sql, params) {
+  return await executeQuery(opts, sql, params);
 }
 
 /**
@@ -44,8 +52,11 @@ async function expectTable (table, count, params) {
         return `${k}=@${k}@`
       }
     }).join(' and ')}`
+    Object.keys(params).forEach((key) => {
+      params[key] = typeof params[key] === 'number' ? params[key] + '' : params[key]
+    })
   }
-  const result = await informix.query(sql, params)
+  const result = await queryInformix(sql, params)
   should.equal(result[0][0], count, `Table ${table} got wrong expect count result expect ${count} actual ${result[0][0]}`)
 }
 
@@ -53,19 +64,19 @@ async function expectTable (table, count, params) {
  * Clear submissions in db
  */
 async function clearSubmissions () {
-  await informix.query('DELETE FROM informixoltp:long_comp_result')
-  await informix.query('DELETE FROM informixoltp:long_submission')
-  await informix.query('DELETE FROM informixoltp:long_component_state')
-  await informix.query('DELETE FROM informixoltp:round_registration')
+  await queryInformix('DELETE FROM informixoltp:long_comp_result')
+  await queryInformix('DELETE FROM informixoltp:long_submission')
+  await queryInformix('DELETE FROM informixoltp:long_component_state')
+  await queryInformix('DELETE FROM informixoltp:round_registration')
 
-  await informix.query('DELETE FROM resource_submission')
-  await informix.query('DELETE FROM submission')
-  await informix.query('DELETE FROM upload')
+  await queryInformix('DELETE FROM resource_submission')
+  await queryInformix('DELETE FROM submission')
+  await queryInformix('DELETE FROM upload')
 }
 
 module.exports = {
   sleep,
   expectTable,
   clearSubmissions,
-  informix
+  queryInformix
 }
