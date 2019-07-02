@@ -28,8 +28,7 @@ const sampleStudioSubmission = {
   resource: 'submission',
   url: 'http://content.topcoder.com/some/path',
   type: 'Contest Submission',
-  submissionPhaseId: 95284,
-  created: '2018-02-16T00:00:00'
+  submissionPhaseId: 95284
 }
 
 // The good no challenge properties sample submission
@@ -40,8 +39,7 @@ const sampleNoChallengePropertiesSubmission = {
   resource: 'submission',
   url: 'http://content.topcoder.com/some/path',
   type: 'Contest Submission',
-  submissionPhaseId: 95308,
-  created: '2018-02-16T00:00:00'
+  submissionPhaseId: 95308
 }
 
 // The good final fix sample submission
@@ -52,8 +50,7 @@ const sampleFinalFixSubmission = {
   resource: 'submission',
   url: 'http://content.topcoder.com/some/path',
   type: 'Contest Submission',
-  submissionPhaseId: 95308,
-  created: '2018-02-16T00:00:00'
+  submissionPhaseId: 95308
 }
 
 // The good not allow multiple submission sample submission
@@ -64,8 +61,7 @@ const sampleNotAllowMultipleSubmission = {
   resource: 'submission',
   url: 'http://content.topcoder.com/some/path',
   type: 'Contest Submission',
-  submissionPhaseId: 95301,
-  created: '2018-02-16T00:00:00'
+  submissionPhaseId: 95301
 }
 
 // The good sample MM submission
