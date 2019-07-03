@@ -77,7 +77,6 @@ class InformixContext {
   constructor(opts) {
     const { server, database, host, protocol, port, username, password, locale } = opts;
     this.connStr = `SERVER=${server};DATABASE=${database};HOST=${host};Protocol=${protocol};SERVICE=${port};UID=${username};PWD=${password};DB_LOCALE=${locale}`;
-    logger.debug(this.connStr);
   }
 
   /**
