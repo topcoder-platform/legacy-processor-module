@@ -1,31 +1,26 @@
 /**
  * The ID generator service
  */
-const logger = require("./common/logger");
-const util = require("util");
-const _ = require("lodash");
-const config = require("config");
-const Mutex = require("async-mutex").Mutex;
-const {
-  getInformixConnection,
-  createContext,
-  query
-} = require("./Informix");
+const logger = require('./common/logger');
+const util = require('util');
+const _ = require('lodash');
+const config = require('config');
+const Mutex = require('async-mutex').Mutex;
+const { InformixContext } = require('./Informix');
 
-const QUERY_GET_ID_SEQ =
-  "select next_block_start, block_size from id_sequences where name = @seqName@";
-const QUERY_UPDATE_ID_SEQ =
-  "update id_sequences set next_block_start = @nextStart@ where name = @seqName@";
+const QUERY_GET_ID_SEQ = 'select next_block_start, block_size from id_sequences where name = @seqName@';
+const QUERY_UPDATE_ID_SEQ = 'update id_sequences set next_block_start = @nextStart@ where name = @seqName@';
 
 // db informix option
 const dbOpts = {
+  server: config.DB_SERVER,
   database: config.DB_ID_NAME,
+  host: config.DB_HOST,
+  protocol: config.DB_PROTOCOL,
+  port: config.DB_PORT,
   username: config.DB_USERNAME,
   password: config.DB_PASSWORD,
-  pool: {
-    min: 0,
-    max: 10
-  }
+  locale: config.DB_LOCALE
 };
 
 /**
@@ -50,16 +45,32 @@ class IDGenerator {
   async getNextId() {
     const release = await this.mutex.acquire();
     try {
-      logger.debug("Getting nextId");
+      logger.debug('Getting nextId');
       --this._availableId;
       logger.debug(`this._availableId = ${this._availableId}`);
 
       if (this._availableId <= 0) {
-        await this.getNextBlock();
-        await this.updateNextBlock(this._nextId + this._availableId + 1);
+        const ctx = new InformixContext(dbOpts);
+        try {
+          await ctx.begin();
+
+          const [nextId, availableId] = await this.getNextBlock(ctx);
+          await this.updateNextBlock(ctx, nextId + availableId + 1);
+
+          await ctx.commit();
+
+          // Only set to this's properties after successful commit
+          this._nextId = nextId;
+          this._availableId = availableId;
+        } catch (e) {
+          await ctx.rollback();
+          throw e;
+        } finally {
+          await ctx.end();
+        }
       }
 
-      logger.debug(`this._availableId = ${this._nextId}`);
+      logger.debug(`this._availableId = ${this._availableId}`);
       return ++this._nextId;
     } catch (e) {
       throw e;
@@ -70,21 +81,21 @@ class IDGenerator {
 
   /**
    * Fetch next block from id_sequence
+   * @param {InformixContext} ctx informix db context
+   * @returns {Array} [nextId, availableId]
    * @private
    */
-  async getNextBlock() {
-    let dbConnection = getInformixConnection(dbOpts);
-
+  async getNextBlock(ctx) {
     try {
-      const result = await query(dbConnection, QUERY_GET_ID_SEQ, {
+      const result = await ctx.query(QUERY_GET_ID_SEQ, {
         seqName: this.seqName
       });
 
       if (!_.isArray(result) || _.isEmpty(result)) {
         throw new Error(`null or empty result for ${this.seqName}`);
       }
-      this._nextId = --result[0][0];
-      this._availableId = result[0][1];
+
+      return [result[0][0] - 1, result[0][1]];
     } catch (e) {
       logger.error(util.inspect(e));
       throw e;
@@ -93,27 +104,20 @@ class IDGenerator {
 
   /**
    * Update id_sequence
+   * @param {InformixContext} ctx informix db context
    * @param {Number} nextStart next start id
    * @private
    */
-  async updateNextBlock(nextStart) {
-    let dbConnection = getInformixConnection(dbOpts);
-    let ctx = createContext(dbConnection);
+  async updateNextBlock(ctx, nextStart) {
     try {
-      await ctx.begin();
-
-      await query(ctx, QUERY_UPDATE_ID_SEQ, {
+      await ctx.query(QUERY_UPDATE_ID_SEQ, {
         seqName: this.seqName,
         nextStart
       });
-      await ctx.commit();
     } catch (e) {
-      logger.error("Failed to update id sequence: " + this.seqName);
+      logger.error('Failed to update id sequence: ' + this.seqName);
       logger.error(util.inspect(e));
-      await ctx.rollback();
       throw e;
-    } finally {
-      await ctx.end();
     }
   }
 }
