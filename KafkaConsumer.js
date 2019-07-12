@@ -106,15 +106,23 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
       )
       .catch(err => {
         logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
-        logger.error(util.inspect(err));
 
+        logger.debug('=== In Catch ===');
         if (messageInfo.payload.retryCount && messageInfo.payload.retryCount > 0) {
+          logger.debug('=== In Catch - IF ===');
           errorLog.error(err);
+          consumer.commitOffset({
+            topic,
+            partition,
+            offset: m.offset
+          });
         } else {
+          logger.debug('=== In Catch - ELSE ===');
           let retryCount = _.get(messageInfo, 'payload.retryCount')
             ? Number(_.get(messageInfo, 'payload.retryCount')) + 1
             : 1;
           messageInfo.payload.retryCount = retryCount;
+          logger.debug(messageInfo);
           busApiClient.postEvent(messageInfo);
         }
       });
