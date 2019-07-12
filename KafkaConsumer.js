@@ -11,21 +11,8 @@ const busApi = require('topcoder-bus-api-wrapper');
 
 global.Promise = require('bluebird');
 
-const errorLog = errorLogger({
-  LOG_LEVEL: config.LOG_LEVEL,
-  AUTH0_URL: config.AUTH0_URL,
-  AUTH0_AUDIENCE: config.AUTH0_AUDIENCE,
-  TOKEN_CACHE_TIME: config.TOKEN_CACHE_TIME,
-  AUTH0_CLIENT_ID: config.AUTH0_CLIENT_ID,
-  AUTH0_CLIENT_SECRET: config.AUTH0_CLIENT_SECRET,
-  BUSAPI_URL: config.BUSAPI_URL,
-  KAFKA_ERROR_TOPIC: config.KAFKA_ERROR_TOPIC,
-  AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL,
-  KAFKA_MESSAGE_ORIGINATOR: config.KAFKA_MESSAGE_ORIGINATOR,
-  POST_KAFKA_ERROR_ENABLED: true
-});
 
-const busApi = busApi({
+const busConfigObj = {
   AUTH0_URL: config.AUTH0_URL,
   AUTH0_AUDIENCE: config.AUTH0_AUDIENCE,
   TOKEN_CACHE_TIME: config.TOKEN_CACHE_TIME,
@@ -34,7 +21,15 @@ const busApi = busApi({
   BUSAPI_URL: config.BUSAPI_URL,
   KAFKA_ERROR_TOPIC: config.KAFKA_ERROR_TOPIC,
   AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL
-});
+}
+
+const errorConfigObj = busConfigObj;
+errorConfigObj.LOG_LEVEL = config.LOG_LEVEL;
+errorConfigObj.KAFKA_MESSAGE_ORIGINATOR = config.KAFKA_MESSAGE_ORIGINATOR;
+errorConfigObj.POST_KAFKA_ERROR_ENABLED = true;
+
+const errorLog = errorLogger(errorConfigObj);
+const busApiClient = busApi(configObj);
 
 /**
  * Get kafka options.
@@ -119,7 +114,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         } else {
           let retryCount = _.get(messageInfo, 'payload.retryCount') ? Number(_.get(messageInfo, 'payload.retryCount')) + 1 :  1
           messageInfo.payload.retryCount = retryCount;
-          await busApi.postEvent(messageInfo);
+          await busApiClient.postEvent(messageInfo);
         }
       });
   });
