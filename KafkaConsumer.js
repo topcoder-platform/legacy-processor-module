@@ -108,7 +108,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
 
         logger.debug('=== In Catch ===');
-        if (messageInfo.payload.retryCount && messageInfo.payload.retryCount > 0) {
+        if (messageJSON.payload.retryCount && messageJSON.payload.retryCount > 0) {
           logger.debug('=== In Catch - IF ===');
           errorLog.error(err);
           consumer.commitOffset({
@@ -118,12 +118,12 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
           });
         } else {
           logger.debug('=== In Catch - ELSE ===');
-          let retryCount = _.get(messageInfo, 'payload.retryCount')
-            ? Number(_.get(messageInfo, 'payload.retryCount')) + 1
+          let retryCount = _.get(messageJSON, 'payload.retryCount')
+            ? Number(_.get(messageJSON, 'payload.retryCount')) + 1
             : 1;
-          messageInfo.payload.retryCount = retryCount;
-          logger.debug(messageInfo);
-          busApiClient.postEvent(messageInfo);
+          messageJSON.payload.retryCount = retryCount;
+          logger.debug(messageJSON);
+          busApiClient.postEvent(messageJSON);
         }
       });
   });
