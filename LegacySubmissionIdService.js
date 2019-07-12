@@ -8,6 +8,7 @@ const config = require('config');
 const Flatted = require('flatted');
 const m2mAuth = require('tc-core-library-js').auth.m2m;
 const moment = require('moment');
+const momentTZ = require('moment-timezone');
 
 const logger = require('./common/logger');
 const constant = require('./common/constant');
@@ -271,9 +272,9 @@ async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, ur
     let patchObject;
     const audits = {
       createUser: userId,
-      createDate: moment(submissionTime).format('YYYY-MM-DD HH:mm:ss'),
+      createDate: momentTZ.tz(submissionTime, 'America/New_York').format('YYYY-MM-DD HH:mm:ss'),
       modifyUser: userId,
-      modifyDate: moment(submissionTime).format('YYYY-MM-DD HH:mm:ss')
+      modifyDate: momentTZ.tz(submissionTime, 'America/New_York').format('YYYY-MM-DD HH:mm:ss')
     };
     let params = {
       uploadId,
@@ -485,9 +486,9 @@ async function addSubmission(newSubmissionId, challengeId, userId, phaseId, url,
 
     const audits = {
       createUser: userId,
-      createDate: moment(submissionTime).format('YYYY-MM-DD HH:mm:ss'),
+      createDate: momentTZ.tz(submissionTime, 'America/New_York').format('YYYY-MM-DD HH:mm:ss'),
       modifyUser: userId,
-      modifyDate: moment(submissionTime).format('YYYY-MM-DD HH:mm:ss')
+      modifyDate: momentTZ.tz(submissionTime, 'America/New_York').format('YYYY-MM-DD HH:mm:ss')
     };
 
     let params = {
@@ -780,6 +781,8 @@ async function updateUpload(challengeId, userId, phaseId, url, submissionType, s
   const ctx = new InformixContext(dbOpts);
 
   try {
+    throw new Error('New Error to Test the Error Loggin Module');
+
     await ctx.begin();
     let sql;
     let params;

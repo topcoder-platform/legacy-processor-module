@@ -6,8 +6,23 @@ const config = require('config');
 const Kafka = require('no-kafka');
 const healthcheck = require('topcoder-healthcheck-dropin');
 const logger = require('./common/logger');
+const errorLogger = require('topcoder-error-logger');
 
 global.Promise = require('bluebird');
+
+const errorLog = errorLogger(
+  config.LOG_LEVEL,
+  config.AUTH0_URL,
+  config.AUTH0_AUDIENCE,
+  config.TOKEN_CACHE_TIME,
+  config.AUTH0_CLIENT_ID,
+  config.AUTH0_CLIENT_SECRET,
+  config.BUSAPI_URL,
+  config.KAFKA_ERROR_TOPIC,
+  config.AUTH0_PROXY_SERVER_URL,
+  config.KAFKA_MESSAGE_ORIGINATOR,
+  true
+);
 
 /**
  * Get kafka options.
@@ -84,13 +99,15 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         })
       )
       .catch(err => {
-        consumer.commitOffset({
-          topic,
-          partition,
-          offset: m.offset
-        });
+        // Not to commit offset if error while processing message
+        // consumer.commitOffset({
+        //   topic,
+        //   partition,
+        //   offset: m.offset
+        // });
         logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
         logger.error(util.inspect(err));
+        errorLog.error(err);
       });
   });
 
