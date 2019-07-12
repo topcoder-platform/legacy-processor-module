@@ -107,9 +107,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
       .catch(err => {
         logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
 
-        logger.debug('=== In Catch ===');
-        if (messageJSON.payload.retryCount && messageJSON.payload.retryCount > 0) {
-          logger.debug('=== In Catch - IF ===');
+        if (messageJSON.payload.retryCount && messageJSON.payload.retryCount > config.MESSAGE_RETRY_COUNT) {
           errorLog.error(err);
           consumer.commitOffset({
             topic,
@@ -117,7 +115,6 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
             offset: m.offset
           });
         } else {
-          logger.debug('=== In Catch - ELSE ===');
           let retryCount = messageJSON.payload.retryCount ? Number(messageJSON.payload.retryCount) + 1 : 1;
           messageJSON.payload.retryCount = retryCount;
           logger.debug(messageJSON);
