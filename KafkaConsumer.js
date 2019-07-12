@@ -6,8 +6,29 @@ const config = require('config');
 const Kafka = require('no-kafka');
 const healthcheck = require('topcoder-healthcheck-dropin');
 const logger = require('./common/logger');
+const errorLogger = require('topcoder-error-logger');
+const busApi = require('topcoder-bus-api-wrapper');
 
 global.Promise = require('bluebird');
+
+const busConfigObj = {
+  AUTH0_URL: config.AUTH0_URL,
+  AUTH0_AUDIENCE: config.AUTH0_AUDIENCE,
+  TOKEN_CACHE_TIME: config.TOKEN_CACHE_TIME,
+  AUTH0_CLIENT_ID: config.AUTH0_CLIENT_ID,
+  AUTH0_CLIENT_SECRET: config.AUTH0_CLIENT_SECRET,
+  BUSAPI_URL: config.BUSAPI_URL,
+  KAFKA_ERROR_TOPIC: config.KAFKA_ERROR_TOPIC,
+  AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL
+};
+
+const errorConfigObj = JSON.parse(JSON.stringify(busConfigObj));
+errorConfigObj.LOG_LEVEL = config.LOG_LEVEL;
+errorConfigObj.KAFKA_MESSAGE_ORIGINATOR = config.KAFKA_MESSAGE_ORIGINATOR;
+errorConfigObj.POST_KAFKA_ERROR_ENABLED = true;
+
+const errorLog = errorLogger(errorConfigObj);
+const busApiClient = busApi(busConfigObj);
 
 /**
  * Get kafka options.
@@ -84,13 +105,21 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         })
       )
       .catch(err => {
-        consumer.commitOffset({
-          topic,
-          partition,
-          offset: m.offset
-        });
         logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
-        logger.error(util.inspect(err));
+
+        if (messageJSON.payload.retryCount && messageJSON.payload.retryCount > config.MESSAGE_RETRY_COUNT) {
+          errorLog.error(err);
+          consumer.commitOffset({
+            topic,
+            partition,
+            offset: m.offset
+          });
+        } else {
+          let retryCount = messageJSON.payload.retryCount ? Number(messageJSON.payload.retryCount) + 1 : 1;
+          messageJSON.payload.retryCount = retryCount;
+          logger.debug(messageJSON);
+          busApiClient.postEvent(messageJSON);
+        }
       });
   });
 
