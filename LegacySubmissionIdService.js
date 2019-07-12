@@ -781,8 +781,6 @@ async function updateUpload(challengeId, userId, phaseId, url, submissionType, s
   const ctx = new InformixContext(dbOpts);
 
   try {
-    throw new Error('New Error to Test the Error Loggin Module');
-
     await ctx.begin();
     let sql;
     let params;
