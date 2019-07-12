@@ -28,7 +28,7 @@ errorConfigObj.KAFKA_MESSAGE_ORIGINATOR = config.KAFKA_MESSAGE_ORIGINATOR;
 errorConfigObj.POST_KAFKA_ERROR_ENABLED = true;
 
 const errorLog = errorLogger(errorConfigObj);
-const busApiClient = busApi(configObj);
+const busApiClient = busApi(busConfigObj);
 
 /**
  * Get kafka options.
