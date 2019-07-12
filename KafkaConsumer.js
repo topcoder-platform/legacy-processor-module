@@ -11,7 +11,6 @@ const busApi = require('topcoder-bus-api-wrapper');
 
 global.Promise = require('bluebird');
 
-
 const busConfigObj = {
   AUTH0_URL: config.AUTH0_URL,
   AUTH0_AUDIENCE: config.AUTH0_AUDIENCE,
@@ -21,7 +20,7 @@ const busConfigObj = {
   BUSAPI_URL: config.BUSAPI_URL,
   KAFKA_ERROR_TOPIC: config.KAFKA_ERROR_TOPIC,
   AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL
-}
+};
 
 const errorConfigObj = busConfigObj;
 errorConfigObj.LOG_LEVEL = config.LOG_LEVEL;
@@ -109,12 +108,14 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
         logger.error(util.inspect(err));
 
-        if(messageInfo.payload.retryCount && messageInfo.payload.retryCount > 0) {
+        if (messageInfo.payload.retryCount && messageInfo.payload.retryCount > 0) {
           errorLog.error(err);
         } else {
-          let retryCount = _.get(messageInfo, 'payload.retryCount') ? Number(_.get(messageInfo, 'payload.retryCount')) + 1 :  1
+          let retryCount = _.get(messageInfo, 'payload.retryCount')
+            ? Number(_.get(messageInfo, 'payload.retryCount')) + 1
+            : 1;
           messageInfo.payload.retryCount = retryCount;
-          await busApiClient.postEvent(messageInfo);
+          busApiClient.postEvent(messageInfo);
         }
       });
   });
