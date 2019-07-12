@@ -118,9 +118,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
           });
         } else {
           logger.debug('=== In Catch - ELSE ===');
-          let retryCount = _.get(messageJSON, 'payload.retryCount')
-            ? Number(_.get(messageJSON, 'payload.retryCount')) + 1
-            : 1;
+          let retryCount = messageJSON.payload.retryCount ? Number(messageJSON.payload.retryCount) + 1 : 1;
           messageJSON.payload.retryCount = retryCount;
           logger.debug(messageJSON);
           busApiClient.postEvent(messageJSON);
