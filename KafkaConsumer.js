@@ -22,7 +22,7 @@ const busConfigObj = {
   AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL
 };
 
-const errorConfigObj = busConfigObj;
+const errorConfigObj = JSON.parse(JSON.stringify(busConfigObj));
 errorConfigObj.LOG_LEVEL = config.LOG_LEVEL;
 errorConfigObj.KAFKA_MESSAGE_ORIGINATOR = config.KAFKA_MESSAGE_ORIGINATOR;
 errorConfigObj.POST_KAFKA_ERROR_ENABLED = true;
