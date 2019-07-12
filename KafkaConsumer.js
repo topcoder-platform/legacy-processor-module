@@ -7,6 +7,7 @@ const Kafka = require('no-kafka');
 const healthcheck = require('topcoder-healthcheck-dropin');
 const logger = require('./common/logger');
 const errorLogger = require('topcoder-error-logger');
+const busApi = require('topcoder-bus-api-wrapper');
 
 global.Promise = require('bluebird');
 
@@ -22,6 +23,17 @@ const errorLog = errorLogger({
   AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL,
   KAFKA_MESSAGE_ORIGINATOR: config.KAFKA_MESSAGE_ORIGINATOR,
   POST_KAFKA_ERROR_ENABLED: true
+});
+
+const busApi = busApi({
+  AUTH0_URL: config.AUTH0_URL,
+  AUTH0_AUDIENCE: config.AUTH0_AUDIENCE,
+  TOKEN_CACHE_TIME: config.TOKEN_CACHE_TIME,
+  AUTH0_CLIENT_ID: config.AUTH0_CLIENT_ID,
+  AUTH0_CLIENT_SECRET: config.AUTH0_CLIENT_SECRET,
+  BUSAPI_URL: config.BUSAPI_URL,
+  KAFKA_ERROR_TOPIC: config.KAFKA_ERROR_TOPIC,
+  AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL
 });
 
 /**
@@ -99,15 +111,16 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         })
       )
       .catch(err => {
-        // Not to commit offset if error while processing message
-        // consumer.commitOffset({
-        //   topic,
-        //   partition,
-        //   offset: m.offset
-        // });
         logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
         logger.error(util.inspect(err));
-        errorLog.error(err);
+
+        if(messageInfo.payload.retryCount && messageInfo.payload.retryCount > 0) {
+          errorLog.error(err);
+        } else {
+          let retryCount = _.get(messageInfo, 'payload.retryCount') ? Number(_.get(messageInfo, 'payload.retryCount')) + 1 :  1
+          messageInfo.payload.retryCount = retryCount;
+          await busApi.postEvent(messageInfo);
+        }
       });
   });
 
