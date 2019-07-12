@@ -8,6 +8,7 @@ const healthcheck = require('topcoder-healthcheck-dropin');
 const logger = require('./common/logger');
 const errorLogger = require('topcoder-error-logger');
 const busApi = require('topcoder-bus-api-wrapper');
+const _ = require('lodash');
 
 global.Promise = require('bluebird');
 
@@ -107,11 +108,9 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
       .catch(err => {
         logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
 
-        logger.debug(
-          `Handling failed message ${messageJSON.payload.retryCount} max retry count ${config.MESSAGE_RETRY_COUNT}`
-        );
+        logger.debug(`Handling failed message; max retry count ${config.MESSAGE_RETRY_COUNT}`);
 
-        if (messageJSON.payload.retryCount && messageJSON.payload.retryCount > config.MESSAGE_RETRY_COUNT) {
+        if (_.get(messageJSON, 'payload.retryCount', 0) > config.MESSAGE_RETRY_COUNT) {
           logger.debug(
             `Error after processing the message ${
               config.MESSAGE_RETRY_COUNT
