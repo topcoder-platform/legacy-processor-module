@@ -10,19 +10,19 @@ const errorLogger = require('topcoder-error-logger');
 
 global.Promise = require('bluebird');
 
-const errorLog = errorLogger(
-  config.LOG_LEVEL,
-  config.AUTH0_URL,
-  config.AUTH0_AUDIENCE,
-  config.TOKEN_CACHE_TIME,
-  config.AUTH0_CLIENT_ID,
-  config.AUTH0_CLIENT_SECRET,
-  config.BUSAPI_URL,
-  config.KAFKA_ERROR_TOPIC,
-  config.AUTH0_PROXY_SERVER_URL,
-  config.KAFKA_MESSAGE_ORIGINATOR,
-  true
-);
+const errorLog = errorLogger({
+  LOG_LEVEL: config.LOG_LEVEL,
+  AUTH0_URL: config.AUTH0_URL,
+  AUTH0_AUDIENCE: config.AUTH0_AUDIENCE,
+  TOKEN_CACHE_TIME: config.TOKEN_CACHE_TIME,
+  AUTH0_CLIENT_ID: config.AUTH0_CLIENT_ID,
+  AUTH0_CLIENT_SECRET: config.AUTH0_CLIENT_SECRET,
+  BUSAPI_URL: config.BUSAPI_URL,
+  KAFKA_ERROR_TOPIC: config.KAFKA_ERROR_TOPIC,
+  AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL,
+  KAFKA_MESSAGE_ORIGINATOR: config.KAFKA_MESSAGE_ORIGINATOR,
+  POST_KAFKA_ERROR_ENABLED: true
+});
 
 /**
  * Get kafka options.
