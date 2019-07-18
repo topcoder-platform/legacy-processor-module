@@ -1024,11 +1024,13 @@ async function getSubTrack(challengeId) {
   try {
     const options = await getAxioOptions();
 
-    // attempt to fetch the subtrack
-    const result = await Axios.get(
-      config.CHALLENGE_INFO_API.replace('{cid}', challengeId),
-      options
+    let challengeURL = config.CHALLENGE_INFO_API.replace('{cid}', challengeId);
+    logger.debug(
+      `fetching challenge details for ${challengeId} using ${challengeURL}`
     );
+
+    // attempt to fetch the subtrack
+    const result = await Axios.get(challengeURL, options);
 
     // use _.get to avoid access with undefined object
     return _.get(result.data, 'result.content.subTrack');
