@@ -17,7 +17,9 @@ const IDGenerator = require('./IdGenerator');
 
 const _ = require('lodash');
 
-const m2m = m2mAuth(_.pick(config, ['AUTH0_URL', 'AUTH0_AUDIENCE', 'AUTH0_PROXY_SERVER_URL']));
+const m2m = m2mAuth(
+  _.pick(config, ['AUTH0_URL', 'AUTH0_AUDIENCE', 'AUTH0_PROXY_SERVER_URL'])
+);
 
 // db informix option
 const dbOpts = {
@@ -28,7 +30,7 @@ const dbOpts = {
   port: config.DB_PORT,
   username: config.DB_USERNAME,
   password: config.DB_PASSWORD,
-  locale: config.DB_LOCALE
+  locale: config.DB_LOCALE,
 };
 
 let idUploadGen = new IDGenerator(config.ID_SEQ_UPLOAD);
@@ -52,12 +54,16 @@ const QUERY_INSERT_RESOURCE_SUBMISSION = `insert into resource_submission (resou
   values(@resourceId@, @submissionId@, @createUser@, @createDate@, @modifyUser@, @modifyDate@)`;
 
 // The query to mark record as deleted in "submission" table
-const QUERY_DELETE_SUBMISSION = `update submission set submission_status_id =${constant.SUBMISSION_STATUS['Deleted']}
+const QUERY_DELETE_SUBMISSION = `update submission set submission_status_id =${
+  constant.SUBMISSION_STATUS['Deleted']
+}
    where upload_id in (select upload_id from upload where project_id=@challengeId@ and resource_id=@resourceId@
    and upload_status_id=${constant.UPLOAD_STATUS['Deleted']})`;
 
 // The query to mark record as deleted in "upload" table
-const QUERY_DELETE_UPLOAD = `update upload set upload_status_id =${constant.UPLOAD_STATUS['Deleted']}
+const QUERY_DELETE_UPLOAD = `update upload set upload_status_id =${
+  constant.UPLOAD_STATUS['Deleted']
+}
   where project_id=@challengeId@ and resource_id=@resourceId@ and upload_id <> @uploadId@`;
 
 // The query to get challenge properties
@@ -167,15 +173,23 @@ const QUERY_UPDATE_COMP_RESULT_PLACE = `update informixoltp:long_comp_result set
  * @param {Number} phaseId submission phasse id
  * @returns {Array} [resourceId, isAllowMultipleSubmission, phaseTypeId, challengeTypeId]
  */
-async function getChallengeProperties(ctx, challengeId, userId, resourceRoleId, phaseId) {
+async function getChallengeProperties(
+  ctx,
+  challengeId,
+  userId,
+  resourceRoleId,
+  phaseId
+) {
   try {
     const result = await ctx.query(QUERY_GET_CHALLENGE_PROPERTIES, {
       challengeId,
       userId,
       resourceRoleId,
-      phaseId
+      phaseId,
     });
-    logger.debug(`Challenge properties for: ${challengeId} are: ${JSON.stringify(result)}`);
+    logger.debug(
+      `Challenge properties for: ${challengeId} are: ${JSON.stringify(result)}`
+    );
 
     if (!_.isArray(result) || _.isEmpty(result)) {
       throw new Error(
@@ -201,10 +215,14 @@ async function getMMChallengeProperties(ctx, challengeId, userId) {
   try {
     const result = await ctx.query(QUERY_GET_MMCHALLENGE_PROPERTIES, {
       challengeId,
-      userId
+      userId,
     });
 
-    logger.debug(`MM Challenge properties for: ${challengeId} are: ${JSON.stringify(result)}`);
+    logger.debug(
+      `MM Challenge properties for: ${challengeId} are: ${JSON.stringify(
+        result
+      )}`
+    );
 
     if (!_.isArray(result) || _.isEmpty(result)) {
       throw new Error(
@@ -230,13 +248,26 @@ async function getMMChallengeProperties(ctx, challengeId, userId) {
  * @param {Number} submissionTime the submission timestamp
  * @private
  */
-async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, url, submissionType, submissionTime) {
+async function addMMSubmission(
+  newSubmissionId,
+  challengeId,
+  userId,
+  phaseId,
+  url,
+  submissionType,
+  submissionTime
+) {
   const ctx = new InformixContext(dbOpts);
 
   try {
     await ctx.begin();
 
-    const [resourceId, value, phaseTypeId, challengeTypeId] = await getChallengeProperties(
+    const [
+      resourceId,
+      value,
+      phaseTypeId,
+      challengeTypeId,
+    ] = await getChallengeProperties(
       ctx,
       challengeId,
       userId,
@@ -272,9 +303,13 @@ async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, ur
     let patchObject;
     const audits = {
       createUser: userId,
-      createDate: momentTZ.tz(submissionTime, 'America/New_York').format('YYYY-MM-DD HH:mm:ss'),
+      createDate: momentTZ
+        .tz(submissionTime, 'America/New_York')
+        .format('YYYY-MM-DD HH:mm:ss'),
       modifyUser: userId,
-      modifyDate: momentTZ.tz(submissionTime, 'America/New_York').format('YYYY-MM-DD HH:mm:ss')
+      modifyDate: momentTZ
+        .tz(submissionTime, 'America/New_York')
+        .format('YYYY-MM-DD HH:mm:ss'),
     };
     let params = {
       uploadId,
@@ -285,7 +320,7 @@ async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, ur
       url,
       uploadStatusId: constant.UPLOAD_STATUS['Active'],
       parameter: 'N/A',
-      ...audits
+      ...audits,
     };
 
     logger.debug(`insert upload with params : ${JSON.stringify(params)}`);
@@ -294,7 +329,7 @@ async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, ur
     if (uploadType === constant.UPLOAD_TYPE['Final Fix']) {
       logger.debug(`final fix upload, only insert upload`);
       patchObject = {
-        legacyUploadId: uploadId
+        legacyUploadId: uploadId,
       };
     } else {
       params = {
@@ -302,7 +337,7 @@ async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, ur
         uploadId,
         submissionStatusId: constant.SUBMISSION_STATUS['Active'],
         submissionTypeId: constant.SUBMISSION_TYPE[submissionType].id,
-        ...audits
+        ...audits,
       };
       logger.debug(`insert submission with params : ${JSON.stringify(params)}`);
 
@@ -313,10 +348,12 @@ async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, ur
         resourceId,
         submissionStatusId: constant.SUBMISSION_STATUS['Active'],
         submissionTypeId: constant.SUBMISSION_TYPE[submissionType].id,
-        ...audits
+        ...audits,
       };
 
-      logger.debug(`insert resource submission with params : ${JSON.stringify(params)}`);
+      logger.debug(
+        `insert resource submission with params : ${JSON.stringify(params)}`
+      );
       await ctx.query(QUERY_INSERT_RESOURCE_SUBMISSION, params);
 
       if (!isAllowMultipleSubmission) {
@@ -326,24 +363,26 @@ async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, ur
         const delParams = {
           challengeId,
           resourceId,
-          uploadId
+          uploadId,
         };
         await ctx.query(QUERY_DELETE_UPLOAD, delParams);
         await ctx.query(QUERY_DELETE_SUBMISSION, delParams);
       }
 
-      let [roundId, componentId, componentStateId, numSubmissions, points] = await getMMChallengeProperties(
-        ctx,
-        challengeId,
-        userId
-      );
+      let [
+        roundId,
+        componentId,
+        componentStateId,
+        numSubmissions,
+        points,
+      ] = await getMMChallengeProperties(ctx, challengeId, userId);
 
       logger.debug(
         `get mm challenge properties roundId: ${roundId} componentId: ${componentId} componentStateId: ${componentStateId} numSubmissions: ${numSubmissions} points: ${points}`
       );
       const rrResult = await ctx.query(QUERY_GET_MM_ROUND_REGISTRATION, {
         roundId,
-        userId
+        userId,
       });
 
       if (_.isEmpty(rrResult)) {
@@ -354,14 +393,18 @@ async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, ur
           timestamp: moment(submissionTime).format('YYYY-MM-DD HH:mm:ss'),
           eligible: 1,
           teamId: {
-            replace: 'null'
-          }
+            replace: 'null',
+          },
         };
 
-        logger.debug(`insert round_registration with params : ${JSON.stringify(rrParams)}`);
+        logger.debug(
+          `insert round_registration with params : ${JSON.stringify(rrParams)}`
+        );
         await ctx.query(QUERY_INSERT_MM_ROUND_REGISTRATION, rrParams);
       } else {
-        logger.debug(`round_registration already exists, roundId: ${roundId}, userId: ${userId}`);
+        logger.debug(
+          `round_registration already exists, roundId: ${roundId}, userId: ${userId}`
+        );
       }
 
       if (_.isFinite(componentStateId)) {
@@ -373,7 +416,7 @@ async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, ur
         );
         await ctx.query(QUERY_UPDATE_LONG_COMPONENT_STATE_NUN_SUBMISSIONS, {
           componentStateId,
-          numSubmissions
+          numSubmissions,
         });
       } else {
         numSubmissions = 1;
@@ -387,10 +430,14 @@ async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, ur
           points: 0,
           statusId: constant.COMPONENT_STATE.ACTIVE,
           numSubmissions,
-          numExampleSubmissions: 0
+          numExampleSubmissions: 0,
         };
 
-        logger.debug(`insert long_component_state with params : ${JSON.stringify(lcsParams)}`);
+        logger.debug(
+          `insert long_component_state with params : ${JSON.stringify(
+            lcsParams
+          )}`
+        );
         await ctx.query(QUERY_INSERT_LONG_COMPONENT_STATE, lcsParams);
       }
 
@@ -399,20 +446,22 @@ async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, ur
         componentStateId,
         numSubmissions,
         submissionText: {
-          replace: 'null'
+          replace: 'null',
         },
         openTime: submissionTime,
         submitTime: submissionTime,
         submissionPoints: points,
         languageId: constant.LANGUAGE.OTHERS,
-        isExample: 0
+        isExample: 0,
       };
 
-      logger.debug(`insert long_submission with params : ${JSON.stringify(lsParams)}`);
+      logger.debug(
+        `insert long_submission with params : ${JSON.stringify(lsParams)}`
+      );
       await ctx.query(QUERY_INSERT_LONG_SUBMISSION, lsParams);
 
       patchObject = {
-        legacySubmissionId: submissionId
+        legacySubmissionId: submissionId,
       };
     }
 
@@ -440,13 +489,27 @@ async function addMMSubmission(newSubmissionId, challengeId, userId, phaseId, ur
  * @param {Boolean} isMM is marathon match challenge
  * @returns {Object} the patch object applied to Submission API
  */
-async function addSubmission(newSubmissionId, challengeId, userId, phaseId, url, submissionType, submissionTime, isMM) {
+async function addSubmission(
+  newSubmissionId,
+  challengeId,
+  userId,
+  phaseId,
+  url,
+  submissionType,
+  submissionTime,
+  isMM
+) {
   const ctx = new InformixContext(dbOpts);
 
   try {
     await ctx.begin();
 
-    const [resourceId, value, phaseTypeId, challengeTypeId] = await getChallengeProperties(
+    const [
+      resourceId,
+      value,
+      phaseTypeId,
+      challengeTypeId,
+    ] = await getChallengeProperties(
       ctx,
       challengeId,
       userId,
@@ -486,9 +549,13 @@ async function addSubmission(newSubmissionId, challengeId, userId, phaseId, url,
 
     const audits = {
       createUser: userId,
-      createDate: momentTZ.tz(submissionTime, 'America/New_York').format('YYYY-MM-DD HH:mm:ss'),
+      createDate: momentTZ
+        .tz(submissionTime, 'America/New_York')
+        .format('YYYY-MM-DD HH:mm:ss'),
       modifyUser: userId,
-      modifyDate: momentTZ.tz(submissionTime, 'America/New_York').format('YYYY-MM-DD HH:mm:ss')
+      modifyDate: momentTZ
+        .tz(submissionTime, 'America/New_York')
+        .format('YYYY-MM-DD HH:mm:ss'),
     };
 
     let params = {
@@ -500,7 +567,7 @@ async function addSubmission(newSubmissionId, challengeId, userId, phaseId, url,
       url,
       uploadStatusId: constant.UPLOAD_STATUS['Active'],
       parameter: 'N/A',
-      ...audits
+      ...audits,
     };
 
     logger.debug(`insert upload with params : ${JSON.stringify(params)}`);
@@ -510,7 +577,7 @@ async function addSubmission(newSubmissionId, challengeId, userId, phaseId, url,
     if (uploadType === constant.UPLOAD_TYPE['Final Fix']) {
       logger.debug(`final fix upload, only insert upload`);
       patchObject = {
-        legacyUploadId: uploadId
+        legacyUploadId: uploadId,
       };
     } else {
       params = {
@@ -518,7 +585,7 @@ async function addSubmission(newSubmissionId, challengeId, userId, phaseId, url,
         uploadId,
         submissionStatusId: constant.SUBMISSION_STATUS['Active'],
         submissionTypeId: constant.SUBMISSION_TYPE[submissionType].id,
-        ...audits
+        ...audits,
       };
       logger.debug(`insert submission with params : ${JSON.stringify(params)}`);
 
@@ -528,10 +595,12 @@ async function addSubmission(newSubmissionId, challengeId, userId, phaseId, url,
         resourceId,
         submissionStatusId: constant.SUBMISSION_STATUS['Active'],
         submissionTypeId: constant.SUBMISSION_TYPE[submissionType].id,
-        ...audits
+        ...audits,
       };
 
-      logger.debug(`insert resource submission with params : ${JSON.stringify(params)}`);
+      logger.debug(
+        `insert resource submission with params : ${JSON.stringify(params)}`
+      );
       await ctx.query(QUERY_INSERT_RESOURCE_SUBMISSION, params);
 
       if (!isAllowMultipleSubmission) {
@@ -541,14 +610,14 @@ async function addSubmission(newSubmissionId, challengeId, userId, phaseId, url,
         const delParams = {
           challengeId,
           resourceId,
-          uploadId
+          uploadId,
         };
         await ctx.query(QUERY_DELETE_UPLOAD, delParams);
         await ctx.query(QUERY_DELETE_SUBMISSION, delParams);
       }
 
       patchObject = {
-        legacySubmissionId: submissionId
+        legacySubmissionId: submissionId,
       };
     }
     await ctx.commit();
@@ -590,7 +659,14 @@ async function patchSubmission(submissionId, patchObject) {
  * @param {String} submissionType submission type
  * @param {Number} reviewScore the provisional review score
  */
-async function updateProvisionalScore(challengeId, userId, phaseId, submissionId, submissionType, reviewScore) {
+async function updateProvisionalScore(
+  challengeId,
+  userId,
+  phaseId,
+  submissionId,
+  submissionType,
+  reviewScore
+) {
   logger.debug(`Update provisional score for submission: ${submissionId}`);
 
   const ctx = new InformixContext(dbOpts);
@@ -599,9 +675,15 @@ async function updateProvisionalScore(challengeId, userId, phaseId, submissionId
     await ctx.begin();
 
     // Query componentStateId
-    const [, , componentStateId] = await getMMChallengeProperties(ctx, challengeId, userId);
+    const [, , componentStateId] = await getMMChallengeProperties(
+      ctx,
+      challengeId,
+      userId
+    );
     if (!componentStateId) {
-      throw new Error(`MM component state not found, challengeId: ${challengeId}, userId: ${userId}`);
+      throw new Error(
+        `MM component state not found, challengeId: ${challengeId}, userId: ${userId}`
+      );
     }
     logger.debug(`Get componentStateId: ${componentStateId}`);
 
@@ -611,7 +693,7 @@ async function updateProvisionalScore(challengeId, userId, phaseId, submissionId
       userId,
       phaseId,
       submissionId,
-      resourceRoleId: constant.SUBMISSION_TYPE[submissionType].roleId
+      resourceRoleId: constant.SUBMISSION_TYPE[submissionType].roleId,
     });
     const [submissionNumber] = result[0];
     logger.debug(`Get submission number: ${submissionNumber}`);
@@ -619,20 +701,20 @@ async function updateProvisionalScore(challengeId, userId, phaseId, submissionId
     // Update the initial_score in submission table
     await ctx.query(QUERY_UPDATE_SUBMISSION_INITIAL_REVIEW_SCORE, {
       submissionId,
-      reviewScore
+      reviewScore,
     });
 
     // Update the submission_points in informixoltp:long_submission table
     await ctx.query(QUERY_UPDATE_LONG_SUBMISSION_SCORE, {
       componentStateId,
       submissionNumber,
-      reviewScore
+      reviewScore,
     });
 
     // Update the points in informixoltp:long_component_state table
     await ctx.query(QUERY_UPDATE_LONG_COMPONENT_STATE_POINTS, {
       componentStateId,
-      reviewScore
+      reviewScore,
     });
 
     await ctx.commit();
@@ -661,29 +743,35 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
     await ctx.begin();
 
     // Query roundId
-    let [roundId, , , , , ratedInd] = await getMMChallengeProperties(ctx, challengeId, userId);
+    let [roundId, , , , , ratedInd] = await getMMChallengeProperties(
+      ctx,
+      challengeId,
+      userId
+    );
 
     if (!roundId) {
-      throw new Error(`MM round not found, challengeId: ${challengeId}, userId: ${userId}`);
+      throw new Error(
+        `MM round not found, challengeId: ${challengeId}, userId: ${userId}`
+      );
     }
     logger.debug(`Get roundId: ${roundId}`);
 
     // Update the final_score in submission table
     await ctx.query(QUERY_UPDATE_SUBMISSION_FINAL_REVIEW_SCORE, {
       submissionId,
-      finalScore
+      finalScore,
     });
 
     // Get initial_score from submission table
     let result = await ctx.query(QUERY_GET_SUBMISSION_INITIAL_SCORE, {
-      submissionId
+      submissionId,
     });
     const [initialScore] = result[0];
 
     // Check whether user result exists in informixoltp:long_comp_result
     result = await ctx.query(QUERY_CHECK_COMP_RESULT_EXISTS, {
       roundId,
-      userId
+      userId,
     });
     const [resultExists] = result[0];
 
@@ -694,10 +782,10 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
       initialScore: _.isFinite(initialScore)
         ? initialScore
         : {
-            replace: 0
+            replace: 0,
           },
       finalScore,
-      ratedInd
+      ratedInd,
     };
 
     let userLastCompResult;
@@ -705,7 +793,10 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
       logger.debug('Rated Match - Get previous Rating and Vol');
 
       // Find user's last entry from informixoltp:long_comp_result
-      const userLastCompResultArr = await ctx.query(QUERY_GET_LAST_COMP_RESULT, params);
+      const userLastCompResultArr = await ctx.query(
+        QUERY_GET_LAST_COMP_RESULT,
+        params
+      );
 
       if (_.isArray(userLastCompResultArr) && userLastCompResultArr.length) {
         userLastCompResult = userLastCompResultArr[0];
@@ -718,29 +809,33 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
       params.oldRating = _.isFinite(userLastCompResult[0])
         ? userLastCompResult[0]
         : {
-            replace: 'null'
+            replace: 'null',
           };
       params.oldVol = _.isFinite(userLastCompResult[1])
         ? userLastCompResult[1]
         : {
-            replace: 'null'
+            replace: 'null',
           };
     } else {
       params.oldRating = {
-        replace: 'null'
+        replace: 'null',
       };
       params.oldVol = {
-        replace: 'null'
+        replace: 'null',
       };
     }
 
     if (resultExists) {
       // Update the long_comp_result table
-      logger.debug(`Update long_comp_result with params: ${JSON.stringify(params)}`);
+      logger.debug(
+        `Update long_comp_result with params: ${JSON.stringify(params)}`
+      );
       await ctx.query(QUERY_UPDATE_COMP_RESULT_SCORE, params);
     } else {
       // Add entry in long_comp_result table
-      logger.debug(`Insert into long_comp_result with params: ${JSON.stringify(params)}`);
+      logger.debug(
+        `Insert into long_comp_result with params: ${JSON.stringify(params)}`
+      );
       await ctx.query(QUERY_INSERT_COMP_RESULT, params);
     }
 
@@ -752,7 +847,7 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
         await ctx.query(QUERY_UPDATE_COMP_RESULT_PLACE, {
           placed: i,
           roundId,
-          userId: r[0]
+          userId: r[0],
         });
       }
     }
@@ -777,7 +872,14 @@ async function updateFinalScore(challengeId, userId, submissionId, finalScore) {
  * @param {String} submissionType submission type
  * @param {Number} submissionId submission id
  */
-async function updateUpload(challengeId, userId, phaseId, url, submissionType, submissionId) {
+async function updateUpload(
+  challengeId,
+  userId,
+  phaseId,
+  url,
+  submissionType,
+  submissionId
+) {
   const ctx = new InformixContext(dbOpts);
 
   try {
@@ -789,7 +891,7 @@ async function updateUpload(challengeId, userId, phaseId, url, submissionType, s
       sql = QUERY_UPDATE_UPLOAD_BY_SUBMISSION_ID;
       params = {
         url,
-        submissionId
+        submissionId,
       };
     } else {
       logger.warn('no valid submission id');
@@ -805,10 +907,12 @@ async function updateUpload(challengeId, userId, phaseId, url, submissionType, s
         url,
         challengeId,
         phaseId,
-        resourceId
+        resourceId,
       };
     }
-    logger.debug(`update upload with sql ${sql} and params ${JSON.stringify(params)}`);
+    logger.debug(
+      `update upload with sql ${sql} and params ${JSON.stringify(params)}`
+    );
     await ctx.query(sql, params);
     await ctx.commit();
     return;
@@ -840,11 +944,17 @@ async function getSubmissionApi() {
  */
 async function getAxioOptions() {
   const options = {};
-  if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'development') {
+  if (
+    process.env.NODE_ENV !== 'test' &&
+    process.env.NODE_ENV !== 'development'
+  ) {
     // For test/development will use mock api, no need m2m token
-    const token = await m2m.getMachineToken(config.AUTH0_CLIENT_ID, config.AUTH0_CLIENT_SECRET);
+    const token = await m2m.getMachineToken(
+      config.AUTH0_CLIENT_ID,
+      config.AUTH0_CLIENT_SECRET
+    );
     options.headers = {
-      Authorization: `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     };
   }
 
@@ -865,7 +975,7 @@ function handleAxiosError(err, apiName) {
         {
           data: err.response.data,
           status: err.response.status,
-          headers: err.response.headers
+          headers: err.response.headers,
         },
         null,
         2
@@ -873,7 +983,13 @@ function handleAxiosError(err, apiName) {
     );
   } else if (err.request) {
     // request sent, no response received
-    logger.error(`${apiName} Error (request sent, no response): ${Flatted.stringify(err.request, null, 2)}`);
+    logger.error(
+      `${apiName} Error (request sent, no response): ${Flatted.stringify(
+        err.request,
+        null,
+        2
+      )}`
+    );
   } else {
     logger.error(util.inspect(err));
   }
@@ -909,7 +1025,16 @@ async function getSubTrack(challengeId) {
     const options = await getAxioOptions();
 
     // attempt to fetch the subtrack
-    const result = await Axios.get(config.CHALLENGE_INFO_API.replace('{cid}', challengeId), options);
+    const result = await Axios.get(
+      config.CHALLENGE_INFO_API.replace('{cid}', challengeId),
+      options
+    );
+    logger.debug(
+      `getting challenge ${config.CHALLENGE_INFO_API.replace('{cid}')}`
+    );
+    logger.debug('=== result ===');
+    logger.debug(JSON.stringify(result));
+    logger.debug('======');
 
     // use _.get to avoid access with undefined object
     return _.get(result.data, 'result.content[0].subTrack');
@@ -926,5 +1051,5 @@ module.exports = {
   updateFinalScore,
   patchSubmission,
   getSubmission,
-  getSubTrack
+  getSubTrack,
 };
