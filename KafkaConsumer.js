@@ -126,6 +126,8 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
           _.get(messageJSON, 'payload.retryCount', 0) >
           config.MESSAGE_RETRY_COUNT
         ) {
+          logger.error(err);
+
           logger.debug(
             `Error after processing the message ${
               config.MESSAGE_RETRY_COUNT
