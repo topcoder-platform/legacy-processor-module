@@ -104,13 +104,15 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
 
     return submissionService
       .handle(messageJSON)
-      .then(() =>
+      .then(() => {
+        logger.debug(`committing offset for ${JSON.stringify(messageJSON)}`);
+
         consumer.commitOffset({
           topic,
           partition,
           offset: m.offset,
-        })
-      )
+        });
+      })
       .catch(err => {
         logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
 
@@ -130,6 +132,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
             } times, committing offset and sending message to error topic`
           );
 
+          error.metadata = messageJSON;
           errorLog.error(err);
 
           consumer.commitOffset({
@@ -138,8 +141,6 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
             offset: m.offset,
           });
         } else {
-          err.metadata = messageJSON;
-
           logger.debug(`Reprocessing the message`);
 
           let retryCount = messageJSON.payload.retryCount
