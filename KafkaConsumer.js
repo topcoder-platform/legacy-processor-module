@@ -20,7 +20,7 @@ const busConfigObj = {
   AUTH0_CLIENT_SECRET: config.AUTH0_CLIENT_SECRET,
   BUSAPI_URL: config.BUSAPI_URL,
   KAFKA_ERROR_TOPIC: config.KAFKA_ERROR_TOPIC,
-  AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL
+  AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL,
 };
 
 const errorConfigObj = JSON.parse(JSON.stringify(busConfigObj));
@@ -39,14 +39,14 @@ function getKafkaOptions() {
   const options = {
     handlerConcurrency: config.KAFKA_CONCURRENCY,
     connectionString: config.KAFKA_URL,
-    groupId: config.KAFKA_GROUP_ID
+    groupId: config.KAFKA_GROUP_ID,
   };
   logger.info(`KAFKA Options - ${JSON.stringify(options)}`);
 
   if (config.KAFKA_CLIENT_CERT && config.KAFKA_CLIENT_CERT_KEY) {
     options.ssl = {
       cert: config.KAFKA_CLIENT_CERT,
-      key: config.KAFKA_CLIENT_CERT_KEY
+      key: config.KAFKA_CLIENT_CERT_KEY,
     };
   }
 
@@ -67,7 +67,9 @@ const consumer = new Kafka.GroupConsumer(getKafkaOptions());
 const handleMessages = (messageSet, topic, partition, submissionService) =>
   Promise.each(messageSet, m => {
     const message = m.message.value ? m.message.value.toString('utf8') : null;
-    const messageInfo = `Topic: ${topic}; Partition: ${partition}; Offset: ${m.offset}; Message: ${message}.`;
+    const messageInfo = `Topic: ${topic}; Partition: ${partition}; Offset: ${
+      m.offset
+    }; Message: ${message}.`;
     logger.info(`Handle Kafka event message; ${messageInfo}`);
 
     if (!message) {
@@ -91,7 +93,11 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
     }
 
     if (messageJSON.topic !== topic) {
-      logger.error(`Skipped the message topic "${messageJSON.topic}" doesn't match the Kafka topic ${topic}.`);
+      logger.error(
+        `Skipped the message topic "${
+          messageJSON.topic
+        }" doesn't match the Kafka topic ${topic}.`
+      );
       // ignore the message
       return;
     }
@@ -102,15 +108,22 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         consumer.commitOffset({
           topic,
           partition,
-          offset: m.offset
+          offset: m.offset,
         })
       )
       .catch(err => {
         logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
 
-        logger.debug(`Handling failed message; max retry count ${config.MESSAGE_RETRY_COUNT}`);
+        logger.debug(
+          `Handling failed message; max retry count ${
+            config.MESSAGE_RETRY_COUNT
+          }`
+        );
 
-        if (_.get(messageJSON, 'payload.retryCount', 0) > config.MESSAGE_RETRY_COUNT) {
+        if (
+          _.get(messageJSON, 'payload.retryCount', 0) >
+          config.MESSAGE_RETRY_COUNT
+        ) {
           logger.debug(
             `Error after processing the message ${
               config.MESSAGE_RETRY_COUNT
@@ -118,15 +131,20 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
           );
 
           errorLog.error(err);
+
           consumer.commitOffset({
             topic,
             partition,
-            offset: m.offset
+            offset: m.offset,
           });
         } else {
+          err.metadata = messageJSON;
+
           logger.debug(`Reprocessing the message`);
 
-          let retryCount = messageJSON.payload.retryCount ? Number(messageJSON.payload.retryCount) + 1 : 1;
+          let retryCount = messageJSON.payload.retryCount
+            ? Number(messageJSON.payload.retryCount) + 1
+            : 1;
           messageJSON.payload.retryCount = retryCount;
 
           logger.debug(messageJSON);
@@ -141,7 +159,10 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
  * @private
  */
 function check() {
-  if (!consumer.client.initialBrokers && !consumer.client.initialBrokers.length) {
+  if (
+    !consumer.client.initialBrokers &&
+    !consumer.client.initialBrokers.length
+  ) {
     return false;
   }
   let connected = true;
@@ -163,8 +184,9 @@ function startConsumer(submissionService, topics) {
     .init([
       {
         subscriptions: topics,
-        handler: async (messageSet, topic, partition) => handleMessages(messageSet, topic, partition, submissionService)
-      }
+        handler: async (messageSet, topic, partition) =>
+          handleMessages(messageSet, topic, partition, submissionService),
+      },
     ])
     .then(() => {
       healthcheck.init([check]);
@@ -177,5 +199,5 @@ function startConsumer(submissionService, topics) {
 
 module.exports = {
   getKafkaOptions,
-  startConsumer
+  startConsumer,
 };
