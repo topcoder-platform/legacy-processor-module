@@ -1036,7 +1036,7 @@ async function getSubTrack(challengeId) {
     logger.debug(`getting challenge ${temp}`);
 
     logger.debug('=== result ===');
-    logger.debug(JSON.stringify(result));
+    logger.debug(result);
     logger.debug('======');
 
     // use _.get to avoid access with undefined object
