@@ -1031,9 +1031,10 @@ async function getSubTrack(challengeId) {
       config.CHALLENGE_INFO_API.replace('{cid}', challengeId),
       options
     );
-    logger.debug(
-      `getting challenge ${config.CHALLENGE_INFO_API.replace('{cid}')}`
-    );
+
+    const temp = config.CHALLENGE_INFO_API.replace('{cid}', challengeId);
+    logger.debug(`getting challenge ${temp}`);
+
     logger.debug('=== result ===');
     logger.debug(JSON.stringify(result));
     logger.debug('======');
