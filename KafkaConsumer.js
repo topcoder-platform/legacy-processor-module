@@ -131,6 +131,11 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
           );
 
           err.metadata = messageJSON;
+
+          logger.debug('===');
+          logger.debug(err);
+          logger.debug('===');
+
           errorLog.error(err);
 
           consumer.commitOffset({
