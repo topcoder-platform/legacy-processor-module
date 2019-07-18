@@ -130,12 +130,6 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
             } times, committing offset and sending message to error topic`
           );
 
-          err['metadata'] = JSON.stringify(messageJSON);
-
-          logger.debug('===');
-          logger.debug(err);
-          logger.debug('===');
-
           errorLog.error(err);
 
           consumer.commitOffset({
@@ -145,10 +139,6 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
           });
         } else {
           err.metadata = messageJSON;
-
-          logger.debug('=======');
-          logger.debug(err);
-          logger.debug('=======');
 
           logger.debug(`Reprocessing the message`);
 
