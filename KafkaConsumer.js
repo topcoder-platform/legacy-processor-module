@@ -130,7 +130,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
             } times, committing offset and sending message to error topic`
           );
 
-          err.metadata = messageJSON;
+          err['metadata'] = JSON.stringify(messageJSON);
 
           logger.debug('===');
           logger.debug(err);
