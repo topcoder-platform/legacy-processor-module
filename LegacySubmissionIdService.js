@@ -1030,8 +1030,6 @@ async function getSubTrack(challengeId) {
       options
     );
 
-    const temp = config.CHALLENGE_INFO_API.replace('{cid}', challengeId);
-
     // use _.get to avoid access with undefined object
     return _.get(result.data, 'result.content.subTrack');
   } catch (err) {
