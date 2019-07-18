@@ -1033,14 +1033,9 @@ async function getSubTrack(challengeId) {
     );
 
     const temp = config.CHALLENGE_INFO_API.replace('{cid}', challengeId);
-    logger.debug(`getting challenge ${temp}`);
-
-    logger.debug('=== result ===');
-    logger.debug(result);
-    logger.debug('======');
 
     // use _.get to avoid access with undefined object
-    return _.get(result.data, 'result.content[0].subTrack');
+    return _.get(result.data, 'result.content.subTrack');
   } catch (err) {
     handleAxiosError(err, 'Challenge Details API');
   }
