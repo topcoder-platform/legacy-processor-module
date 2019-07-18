@@ -880,8 +880,6 @@ async function updateUpload(
   submissionType,
   submissionId
 ) {
-  throw new Error('Check for new updates in error-logging-module');
-
   const ctx = new InformixContext(dbOpts);
 
   try {
