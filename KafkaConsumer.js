@@ -132,7 +132,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
             } times, committing offset and sending message to error topic`
           );
 
-          error.metadata = messageJSON;
+          err.metadata = messageJSON;
           errorLog.error(err);
 
           consumer.commitOffset({
