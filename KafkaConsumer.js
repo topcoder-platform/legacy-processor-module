@@ -144,6 +144,12 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
             offset: m.offset,
           });
         } else {
+          err.metadata = messageJSON;
+
+          logger.debug('=======');
+          logger.debug(err);
+          logger.debug('=======');
+
           logger.debug(`Reprocessing the message`);
 
           let retryCount = messageJSON.payload.retryCount
