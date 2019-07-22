@@ -20,7 +20,7 @@ const busConfigObj = {
   AUTH0_CLIENT_SECRET: config.AUTH0_CLIENT_SECRET,
   BUSAPI_URL: config.BUSAPI_URL,
   KAFKA_ERROR_TOPIC: config.KAFKA_ERROR_TOPIC,
-  AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL,
+  AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL
 };
 
 const errorConfigObj = JSON.parse(JSON.stringify(busConfigObj));
@@ -39,14 +39,14 @@ function getKafkaOptions() {
   const options = {
     handlerConcurrency: config.KAFKA_CONCURRENCY,
     connectionString: config.KAFKA_URL,
-    groupId: config.KAFKA_GROUP_ID,
+    groupId: config.KAFKA_GROUP_ID
   };
   logger.info(`KAFKA Options - ${JSON.stringify(options)}`);
 
   if (config.KAFKA_CLIENT_CERT && config.KAFKA_CLIENT_CERT_KEY) {
     options.ssl = {
       cert: config.KAFKA_CLIENT_CERT,
-      key: config.KAFKA_CLIENT_CERT_KEY,
+      key: config.KAFKA_CLIENT_CERT_KEY
     };
   }
 
@@ -110,7 +110,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         consumer.commitOffset({
           topic,
           partition,
-          offset: m.offset,
+          offset: m.offset
         });
       })
       .catch(err => {
@@ -118,46 +118,46 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         logger.debug(err);
         errorLog.error(err);
 
-        //   logger.debug(
-        //     `Handling failed message; max retry count ${
-        //       config.MESSAGE_RETRY_COUNT
-        //     }`
-        //   );
+        logger.debug(
+          `Handling failed message; max retry count ${
+            config.MESSAGE_RETRY_COUNT
+          }`
+        );
 
-        //   if (
-        //     _.get(messageJSON, 'payload.retryCount', 0) >
-        //     config.MESSAGE_RETRY_COUNT
-        //   ) {
-        //     logger.error(err);
+        if (
+          _.get(messageJSON, 'payload.retryCount', 0) >
+          config.MESSAGE_RETRY_COUNT
+        ) {
+          logger.error(err);
 
-        //     logger.debug(
-        //       `Error after processing the message ${
-        //         config.MESSAGE_RETRY_COUNT
-        //       } times, committing offset and sending message to error topic`
-        //     );
+          logger.debug(
+            `Error after processing the message ${
+              config.MESSAGE_RETRY_COUNT
+            } times, committing offset and sending message to error topic`
+          );
 
-        //     err['metadata'] = messageJSON;
+          err['metadata'] = messageJSON;
 
-        //     logger.debug(`sending error to error module`);
-        //     logger.debug(err);
-        //     errorLog.error(err);
+          logger.debug(`sending error to error module`);
+          logger.debug(err);
+          errorLog.error(err);
 
-        //     consumer.commitOffset({
-        //       topic,
-        //       partition,
-        //       offset: m.offset,
-        //     });
-        //   } else {
-        //     logger.debug(`Reprocessing the message`);
+          consumer.commitOffset({
+            topic,
+            partition,
+            offset: m.offset
+          });
+        } else {
+          logger.debug(`Reprocessing the message`);
 
-        //     let retryCount = messageJSON.payload.retryCount
-        //       ? Number(messageJSON.payload.retryCount) + 1
-        //       : 1;
-        //     messageJSON.payload.retryCount = retryCount;
+          let retryCount = messageJSON.payload.retryCount
+            ? Number(messageJSON.payload.retryCount) + 1
+            : 1;
+          messageJSON.payload.retryCount = retryCount;
 
-        //     logger.debug(messageJSON);
-        //     busApiClient.postEvent(messageJSON);
-        //   }
+          logger.debug(messageJSON);
+          busApiClient.postEvent(messageJSON);
+        }
       });
   });
 
@@ -193,8 +193,8 @@ function startConsumer(submissionService, topics) {
       {
         subscriptions: topics,
         handler: async (messageSet, topic, partition) =>
-          handleMessages(messageSet, topic, partition, submissionService),
-      },
+          handleMessages(messageSet, topic, partition, submissionService)
+      }
     ])
     .then(() => {
       healthcheck.init([check]);
@@ -207,5 +207,5 @@ function startConsumer(submissionService, topics) {
 
 module.exports = {
   getKafkaOptions,
-  startConsumer,
+  startConsumer
 };
