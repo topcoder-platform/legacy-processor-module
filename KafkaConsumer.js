@@ -118,47 +118,47 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         logger.debug(err);
         errorLog.error(err);
 
-      //   logger.debug(
-      //     `Handling failed message; max retry count ${
-      //       config.MESSAGE_RETRY_COUNT
-      //     }`
-      //   );
+        //   logger.debug(
+        //     `Handling failed message; max retry count ${
+        //       config.MESSAGE_RETRY_COUNT
+        //     }`
+        //   );
 
-      //   if (
-      //     _.get(messageJSON, 'payload.retryCount', 0) >
-      //     config.MESSAGE_RETRY_COUNT
-      //   ) {
-      //     logger.error(err);
+        //   if (
+        //     _.get(messageJSON, 'payload.retryCount', 0) >
+        //     config.MESSAGE_RETRY_COUNT
+        //   ) {
+        //     logger.error(err);
 
-      //     logger.debug(
-      //       `Error after processing the message ${
-      //         config.MESSAGE_RETRY_COUNT
-      //       } times, committing offset and sending message to error topic`
-      //     );
+        //     logger.debug(
+        //       `Error after processing the message ${
+        //         config.MESSAGE_RETRY_COUNT
+        //       } times, committing offset and sending message to error topic`
+        //     );
 
-      //     err['metadata'] = messageJSON;
+        //     err['metadata'] = messageJSON;
 
-      //     logger.debug(`sending error to error module`);
-      //     logger.debug(err);
-      //     errorLog.error(err);
+        //     logger.debug(`sending error to error module`);
+        //     logger.debug(err);
+        //     errorLog.error(err);
 
-      //     consumer.commitOffset({
-      //       topic,
-      //       partition,
-      //       offset: m.offset,
-      //     });
-      //   } else {
-      //     logger.debug(`Reprocessing the message`);
+        //     consumer.commitOffset({
+        //       topic,
+        //       partition,
+        //       offset: m.offset,
+        //     });
+        //   } else {
+        //     logger.debug(`Reprocessing the message`);
 
-      //     let retryCount = messageJSON.payload.retryCount
-      //       ? Number(messageJSON.payload.retryCount) + 1
-      //       : 1;
-      //     messageJSON.payload.retryCount = retryCount;
+        //     let retryCount = messageJSON.payload.retryCount
+        //       ? Number(messageJSON.payload.retryCount) + 1
+        //       : 1;
+        //     messageJSON.payload.retryCount = retryCount;
 
-      //     logger.debug(messageJSON);
-      //     busApiClient.postEvent(messageJSON);
-      //   }
-      // });
+        //     logger.debug(messageJSON);
+        //     busApiClient.postEvent(messageJSON);
+        //   }
+      });
   });
 
 /**
