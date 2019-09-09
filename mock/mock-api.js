@@ -18,6 +18,7 @@ const sampleSubmission = {
   type: 'Contest Submission',
   submissionPhaseId: 95245,
   created: '2018-02-16T00:00:00',
+  originalTopic: config.KAFKA_NEW_SUBMISSION_TOPIC
 }
 
 // The good studio sample submission
@@ -29,7 +30,8 @@ const sampleStudioSubmission = {
   url: 'http://content.topcoder.com/some/path',
   type: 'Contest Submission',
   submissionPhaseId: 95284,
-  created: '2018-02-16T00:00:00'
+  created: '2018-02-16T00:00:00',
+  originalTopic: config.KAFKA_NEW_SUBMISSION_TOPIC
 }
 
 // The good no challenge properties sample submission
@@ -53,7 +55,8 @@ const sampleFinalFixSubmission = {
   url: 'http://content.topcoder.com/some/path',
   type: 'Contest Submission',
   submissionPhaseId: 95308,
-  created: '2018-02-16T00:00:00'
+  created: '2018-02-16T00:00:00',
+  originalTopic: config.KAFKA_NEW_SUBMISSION_TOPIC
 }
 
 // The good not allow multiple submission sample submission
@@ -65,7 +68,8 @@ const sampleNotAllowMultipleSubmission = {
   url: 'http://content.topcoder.com/some/path',
   type: 'Contest Submission',
   submissionPhaseId: 95301,
-  created: '2018-02-16T00:00:00'
+  created: '2018-02-16T00:00:00',
+  originalTopic: config.KAFKA_NEW_SUBMISSION_TOPIC
 }
 
 // The good sample MM submission
@@ -78,7 +82,8 @@ const sampleMMSubmission = {
   type: 'Contest Submission',
   submissionPhaseId: 95311,
   updated: '2018-02-16T00:00:00',
-  created: '2018-02-16T00:00:00'
+  created: '2018-02-16T00:00:00',
+  originalTopic: config.KAFKA_NEW_SUBMISSION_TOPIC
 }
 
 // The good sample MM submission
@@ -92,6 +97,7 @@ const sampleMMSubmission2 = {
   submissionPhaseId: 95311,
   updated: '2018-02-16T00:00:00',
   created: '2018-02-16T00:00:00',
+  originalTopic: config.KAFKA_NEW_SUBMISSION_TOPIC
 }
 
 // The good mm provisional review
@@ -157,20 +163,20 @@ const sampleMMFinalReview2 = {
 }
 
 const normalSubmission = {
-  'resource': 'submission',
-  'id': 'cfdbc0cf-6437-433e-8af1-c56f317f2afd',
-  'type': 'Contest Submission',
-  'url': 'https://topcoder-dev-submissions.s3.amazonaws.com/cfdbc0cf-6437-433e-8af1-c56f317f2afd',
-  'memberId': 124916,
-  'challengeId': 30005521,
-  'created': '2018-07-31T17:05:17.835Z',
-  'updated': '2018-07-31T17:05:17.835Z',
-  'createdBy': 'callmekatootie',
-  'updatedBy': 'callmekatootie',
-  'submissionPhaseId': 95245,
-  'isFileSubmission': true,
-  'fileType': 'zip',
-  'filename': 'Photo on 7-30-18 at 11.47 AM #2.jpg'
+  resource: 'submission',
+  id: 'cfdbc0cf-6437-433e-8af1-c56f317f2afd',
+  type: 'Contest Submission',
+  url: 'https://topcoder-dev-submissions.s3.amazonaws.com/cfdbc0cf-6437-433e-8af1-c56f317f2afd',
+  memberId: 124916,
+  challengeId: 30005521,
+  created: '2018-07-31T17:05:17.835Z',
+  updated: '2018-07-31T17:05:17.835Z',
+  createdBy: 'callmekatootie',
+  updatedBy: 'callmekatootie',
+  submissionPhaseId: 95245,
+  isFileSubmission: true,
+  fileType: 'zip',
+  filename: 'Photo on 7-30-18 at 11.47 AM #2.jpg'
 }
 
 const submissions = {
@@ -186,7 +192,9 @@ const submissions = {
 // only include used properties and you may check real response from https://api.topcoder-dev.com/v4/challenges?filter=id=30005521
 const getChallenge = (subTrack) => ({
   result: {
-    content: [{ subTrack }]
+    content: {
+      subTrack
+    }
   }
 })
 const challenges = {
@@ -238,7 +246,7 @@ const mockApi = http.createServer((req, res) => {
 if (!module.parent) {
   const port = config.MOCK_API_PORT || 3000
   mockApi.listen(port)
-  console.log(`mock submission api is listen port ${port}`)
+  console.log(`mock submission api is listening on port ${port}`)
 }
 module.exports = {
   sampleSubmission,

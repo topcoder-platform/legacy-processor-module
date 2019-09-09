@@ -1,16 +1,16 @@
 /**
  * The Kafka consumer service.
  */
-const util = require('util');
-const config = require('config');
-const Kafka = require('no-kafka');
-const healthcheck = require('topcoder-healthcheck-dropin');
-const logger = require('./common/logger');
-const errorLogger = require('topcoder-error-logger');
-const busApi = require('topcoder-bus-api-wrapper');
-const _ = require('lodash');
+const config = require('config')
+const Kafka = require('no-kafka')
+const healthcheck = require('topcoder-healthcheck-dropin')
+const logger = require('./common/logger')
+const errorLogger = require('topcoder-error-logger')
+const busApi = require('topcoder-bus-api-wrapper')
+const _ = require('lodash')
+const tracer = require('./common/tracer')
 
-global.Promise = require('bluebird');
+global.Promise = require('bluebird')
 
 const busConfigObj = {
   AUTH0_URL: config.AUTH0_URL,
@@ -21,39 +21,39 @@ const busConfigObj = {
   BUSAPI_URL: config.BUSAPI_URL,
   KAFKA_ERROR_TOPIC: config.KAFKA_ERROR_TOPIC,
   AUTH0_PROXY_SERVER_URL: config.AUTH0_PROXY_SERVER_URL
-};
+}
 
-const errorConfigObj = JSON.parse(JSON.stringify(busConfigObj));
-errorConfigObj.LOG_LEVEL = config.LOG_LEVEL;
-errorConfigObj.KAFKA_MESSAGE_ORIGINATOR = config.KAFKA_MESSAGE_ORIGINATOR;
-errorConfigObj.POST_KAFKA_ERROR_ENABLED = true;
+const errorConfigObj = JSON.parse(JSON.stringify(busConfigObj))
+errorConfigObj.LOG_LEVEL = config.LOG_LEVEL
+errorConfigObj.KAFKA_MESSAGE_ORIGINATOR = config.KAFKA_MESSAGE_ORIGINATOR
+errorConfigObj.POST_KAFKA_ERROR_ENABLED = true
 
-const errorLog = errorLogger(errorConfigObj);
-const busApiClient = busApi(busConfigObj);
+const errorLog = errorLogger(errorConfigObj)
+const busApiClient = busApi(busConfigObj)
 
 /**
  * Get kafka options.
  * @returns {Object} kafka options
  */
-function getKafkaOptions() {
+function getKafkaOptions () {
   const options = {
     handlerConcurrency: config.KAFKA_CONCURRENCY,
     connectionString: config.KAFKA_URL,
     groupId: config.KAFKA_GROUP_ID
-  };
-  logger.info(`KAFKA Options - ${JSON.stringify(options)}`);
+  }
+  logger.info(`KAFKA Options - ${JSON.stringify(options)}`)
 
   if (config.KAFKA_CLIENT_CERT && config.KAFKA_CLIENT_CERT_KEY) {
     options.ssl = {
       cert: config.KAFKA_CLIENT_CERT,
       key: config.KAFKA_CLIENT_CERT_KEY
-    };
+    }
   }
 
-  return options;
+  return options
 }
 
-const consumer = new Kafka.GroupConsumer(getKafkaOptions());
+const consumer = new Kafka.GroupConsumer(getKafkaOptions())
 
 /**
  * Handle the messages from Kafka.
@@ -66,30 +66,53 @@ const consumer = new Kafka.GroupConsumer(getKafkaOptions());
  */
 const handleMessages = (messageSet, topic, partition, submissionService) =>
   Promise.each(messageSet, m => {
-    const message = m.message.value ? m.message.value.toString('utf8') : null;
+    const span = tracer.startSpans('dataHandler')
+    span.setTag('kafka.topic', topic)
+    span.setTag('message_bus.destination', topic)
+    span.setTag('kafka.partition', partition)
+    span.setTag('kafka.offset', m.offset)
+    span.setTag('span.kind', 'consumer')
+
+    const message = m.message.value ? m.message.value.toString('utf8') : null
     const messageInfo = `Topic: ${topic}; Partition: ${partition}; Offset: ${
       m.offset
-    }; Message: ${message}.`;
-    logger.info(`Handle Kafka event message; ${messageInfo}`);
+    }; Message: ${message}.`
+    logger.info(`Handle Kafka event message; ${messageInfo}`)
 
     if (!message) {
-      logger.error('Skipped null or empty event');
-      return;
+      logger.error('Skipped null or empty event')
+      span.setTag('error', true)
+      span.log({
+        event: 'error',
+        message: 'Skipped null or empty event'
+      })
+      span.finish()
+      return
     }
 
-    let messageJSON;
+    const parserSpan = tracer.startChildSpans('parseMessage', span)
+    let messageJSON
     try {
-      messageJSON = JSON.parse(message);
+      messageJSON = JSON.parse(message)
     } catch (e) {
-      logger.error('Skipped Invalid message JSON');
-      logger.error(e);
-      // ignore the message
-      return;
+      logger.error('Skipped Invalid message JSON')
+      logger.error(e)
+      tracer.logSpanError(parserSpan, e)
+      parserSpan.finish()
+      span.finish()
+      return
     }
+    parserSpan.finish()
 
     if (!messageJSON) {
-      logger.error('Skipped null or empty event');
-      return;
+      logger.error('Skipped null or empty event')
+      span.setTag('error', true)
+      span.log({
+        event: 'error',
+        message: 'Skipped null or empty event'
+      })
+      span.finish()
+      return
     }
 
     if (messageJSON.topic !== topic) {
@@ -97,88 +120,113 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         `Skipped the message topic "${
           messageJSON.topic
         }" doesn't match the Kafka topic ${topic}.`
-      );
-      // ignore the message
-      return;
+      )
+      span.setTag('error', true)
+      span.log({
+        event: 'error',
+        message: `Skipped the message topic "${
+          messageJSON.topic
+        }" doesn't match the Kafka topic ${topic}.`
+      })
+      span.finish()
+      return
     }
 
-    return submissionService
-      .handle(messageJSON)
-      .then(() => {
-        logger.debug(`committing offset for ${JSON.stringify(messageJSON)}`);
+    // Log the received payload if it is valid
+    span.log({
+      event: 'debug',
+      message: 'Received valid payload',
+      payload: messageJSON
+    })
 
+    return submissionService
+      .handle(messageJSON, span) // Pass in the parent span to the service
+      .then(() => {
+        logger.debug(`committing offset for ${JSON.stringify(messageJSON)}`)
         consumer.commitOffset({
           topic,
           partition,
           offset: m.offset
-        });
+        })
+        span.finish()
       })
       .catch(err => {
-        logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
-        logger.debug(err);
-        errorLog.error(err);
+        logger.error(`Failed to handle ${messageInfo}: ${err.message}`)
+        logger.debug(err)
+        errorLog.error(err)
 
         logger.debug(
           `Handling failed message; max retry count ${
             config.MESSAGE_RETRY_COUNT
           }`
-        );
+        )
 
         if (
           _.get(messageJSON, 'payload.retryCount', 0) >
           config.MESSAGE_RETRY_COUNT
         ) {
-          logger.error(err);
+          logger.error(err)
 
           logger.debug(
             `Error after processing the message ${
               config.MESSAGE_RETRY_COUNT
             } times, committing offset and sending message to error topic`
-          );
+          )
 
-          err['metadata'] = messageJSON;
+          err.metadata = messageJSON
 
-          logger.debug(`sending error to error module`);
-          logger.debug(err);
-          errorLog.error(err);
+          logger.debug('sending error to error module')
+          logger.debug(err)
+          errorLog.error(err)
 
-          consumer.commitOffset({
-            topic,
-            partition,
-            offset: m.offset
-          });
+          // If no re-tries, end parent span with error
+          tracer.logSpanError(span, err)
+          span.setTag('error', true)
         } else {
-          logger.debug(`Reprocessing the message`);
+          logger.debug('Reprocessing the message')
 
-          let retryCount = messageJSON.payload.retryCount
+          const retryCount = messageJSON.payload.retryCount
             ? Number(messageJSON.payload.retryCount) + 1
-            : 1;
-          messageJSON.payload.retryCount = retryCount;
+            : 1
+          messageJSON.payload.retryCount = retryCount
 
-          logger.debug(messageJSON);
-          busApiClient.postEvent(messageJSON);
+          logger.debug(messageJSON)
+          busApiClient.postEvent(messageJSON)
+          // If re-tries, end span with no error
+          span.setTag('retryCount', retryCount)
+          span.log({
+            event: 'debug',
+            message: 'Reprocessing the message'
+          })
         }
-      });
-  });
+        // Commit offset in either case - retry or no retry
+        consumer.commitOffset({
+          topic,
+          partition,
+          offset: m.offset
+        })
+        span.finish()
+      })
+  })
 
 /**
  * Check if there is kafka connection alive
  * @returns true if kafka connection alive, false otherwise
  * @private
  */
-function check() {
+function check () {
   if (
     !consumer.client.initialBrokers &&
     !consumer.client.initialBrokers.length
   ) {
-    return false;
+    return false
   }
-  let connected = true;
+  let connected = true
   consumer.client.initialBrokers.forEach(conn => {
-    logger.debug(`url ${conn.server()} - connected=${conn.connected}`);
-    connected = conn.connected & connected;
-  });
-  return connected;
+    logger.debug(`url ${conn.server()} - connected=${conn.connected}`)
+    connected = conn.connected & connected
+  })
+  return connected
 }
 
 /**
@@ -187,7 +235,7 @@ function check() {
  * @param {Array<String>} topics the topics to subscribe
  * @returns kafka consumer
  */
-function startConsumer(submissionService, topics) {
+function startConsumer (submissionService, topics) {
   consumer
     .init([
       {
@@ -197,15 +245,15 @@ function startConsumer(submissionService, topics) {
       }
     ])
     .then(() => {
-      healthcheck.init([check]);
-      logger.debug('Consumer initialized successfully');
+      healthcheck.init([check])
+      logger.debug('Consumer initialized successfully')
     })
-    .catch(err => logger.error(err));
+    .catch(err => logger.error(err))
 
-  return consumer;
+  return consumer
 }
 
 module.exports = {
   getKafkaOptions,
   startConsumer
-};
+}

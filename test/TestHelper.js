@@ -5,16 +5,19 @@ const config = require('config')
 const should = require('should')
 const _ = require('lodash')
 
-const { executeQuery } = require("../Informix");
+const { executeQuery } = require('../Informix')
 
 const opts = {
   server: config.DB_SERVER,
   database: config.DB_NAME,
   host: config.DB_HOST,
   service: config.DB_SERVICE,
+  protocol: config.DB_PROTOCOL,
+  port: config.DB_PORT,
   username: config.DB_USERNAME,
   password: config.DB_PASSWORD,
-};
+  locale: config.DB_LOCALE
+}
 
 /**
  * Sleep with time from input
@@ -31,8 +34,8 @@ async function sleep (time) {
  * @param {String} sql the sql
  * @param {Object} params the sql params
  */
-async function queryInformix(sql, params) {
-  return await executeQuery(opts, sql, params);
+async function queryInformix (sql, params) {
+  return executeQuery(opts, sql, params)
 }
 
 /**

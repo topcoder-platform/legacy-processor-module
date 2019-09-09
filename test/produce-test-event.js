@@ -23,10 +23,11 @@ const {
   sampleMMFinalReview,
   sampleMMSubmission2,
   sampleMMProvisionalReview2,
-  sampleMMFinalReview2 } = require('../mock/mock-api')
+  sampleMMFinalReview2
+} = require('../mock/mock-api')
 
 const header = {
-  topic: config.KAFKA_NEW_SUBMISSION_TOPIC,
+  topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC,
   originator: config.KAFKA_NEW_SUBMISSION_ORIGINATOR,
   timestamp: '2018-02-16T00:00:00',
   'mime-type': 'application/json'
@@ -118,20 +119,20 @@ const events = {
   'different-topic': { topic: 'different-topic', message: { value: 'message' } },
 
   // Null message
-  'null-message': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: null } },
+  'null-message': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: null } },
 
   // Empty message
-  'empty-message': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: '' } },
+  'empty-message': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: '' } },
 
   // Not well-formed JSON string
-  'invalid-json': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: 'abc' } },
+  'invalid-json': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: 'abc' } },
 
   // Empty JSON string
-  'empty-json': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: '{}' } },
+  'empty-json': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: '{}' } },
 
   // Invalid timestamp and payload
   'invalid-payload': {
-    topic: config.KAFKA_NEW_SUBMISSION_TOPIC,
+    topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC,
     message: {
       value: JSON.stringify(_.merge({}, sampleMessage, {
         timestamp: 'invalid date',
@@ -149,7 +150,7 @@ const events = {
 
   // Wrong message topic
   'wrong-topic': {
-    topic: config.KAFKA_NEW_SUBMISSION_TOPIC,
+    topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC,
     message: {
       value: JSON.stringify(_.merge({}, sampleMessage, {
         topic: 'wrong-topic'
@@ -159,7 +160,7 @@ const events = {
 
   // Wrong message originator
   'wrong-originator': {
-    topic: config.KAFKA_NEW_SUBMISSION_TOPIC,
+    topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC,
     message: {
       value: JSON.stringify(_.merge({}, sampleMessage, {
         originator: 'wrong-originator'
@@ -168,19 +169,20 @@ const events = {
   },
 
   // Sample submission
-  'submission': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMessage) } },
+  submission: { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMessage) } },
   // Sample final fix submission
-  'final-fix': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleFinalFixMessage) } },
+  'final-fix': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleFinalFixMessage) } },
   // Sample not-allow-multiple submission
-  'not-allow-multiple': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleNotAllowMultipleMessage) } },
+  'not-allow-multiple': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleNotAllowMultipleMessage) } },
   // Sample no-challenge-props submission
-  'no-challenge-props': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleNoChallengePropertiesMessage) } },
+  'no-challenge-props': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleNoChallengePropertiesMessage) } },
 
   // Sample update url message
-  'update-url': { topic: config.KAFKA_UPDATE_SUBMISSION_TOPIC,
+  'update-url': {
+    topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC,
     message: {
       value: JSON.stringify(_.merge({}, sampleMessage, {
-        topic: config.KAFKA_UPDATE_SUBMISSION_TOPIC,
+        topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC,
         payload: {
           url: 'http://content.topcoder.com/some/path/updated'
         }
@@ -189,15 +191,16 @@ const events = {
   },
 
   // Sample mm submission
-  'mm-submission': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMMessage) } },
+  'mm-submission': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMMessage) } },
   // Sample mm submission
-  'mm-submission2': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMMessage2) } },
+  'mm-submission2': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMMessage2) } },
 
   // Sample update mm submission url message
-  'update-mm-url': { topic: config.KAFKA_UPDATE_SUBMISSION_TOPIC,
+  'update-mm-url': {
+    topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC,
     message: {
       value: JSON.stringify(_.merge({}, sampleMMMessage, {
-        topic: config.KAFKA_UPDATE_SUBMISSION_TOPIC,
+        topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC,
         payload: {
           url: 'http://content.topcoder.com/some/path/updated'
         }
@@ -206,14 +209,14 @@ const events = {
   },
 
   // Sample mm provisional score
-  'mm-provisional-score': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMReviewProvisionalMessage) } },
+  'mm-provisional-score': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMReviewProvisionalMessage) } },
   // Sample mm provisional score
-  'mm-provisional-score2': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMReviewProvisionalMessage2) } },
+  'mm-provisional-score2': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMReviewProvisionalMessage2) } },
 
   // Sample mm final score
-  'mm-final-score': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMReviewFinalMessage) } },
+  'mm-final-score': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMReviewFinalMessage) } },
   // Sample mm final score
-  'mm-final-score2': { topic: config.KAFKA_NEW_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMReviewFinalMessage2) } }
+  'mm-final-score2': { topic: config.KAFKA_AGGREGATE_SUBMISSION_TOPIC, message: { value: JSON.stringify(sampleMMReviewFinalMessage2) } }
 }
 
 // Init the producer and send the test events
@@ -221,7 +224,7 @@ const producer = new Kafka.Producer(getKafkaOptions())
 
 // Get event id from argument
 // npm run produce-test-event submission
-let eventId = process.argv[2]
+const eventId = process.argv[2]
 
 producer.init()
   .then(() => producer.send(events[eventId]))

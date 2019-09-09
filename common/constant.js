@@ -7,30 +7,30 @@ const SUBMISSION_TYPE = {
 }
 
 const UPLOAD_TYPE = {
-  'Submission': 1,
+  Submission: 1,
   'Final Fix': 3
 }
 
 const UPLOAD_STATUS = {
-  'Active': 1,
-  'Deleted': 2
+  Active: 1,
+  Deleted: 2
 }
 
 const SUBMISSION_STATUS = {
-  'Active': 1,
-  'Deleted': 5
+  Active: 1,
+  Deleted: 5
 }
 
 const PHASE_TYPE = {
-  'Submission': 2,
+  Submission: 2,
   'Final Fix': 9,
   'Specification Submission': 13
 }
 
 const CHALLENGE_TYPE = {
-  'Component': 1,
-  'Application': 2,
-  'Studio': 3
+  Component: 1,
+  Application: 2,
+  Studio: 3
 }
 
 const COMPONENT_STATE = {
