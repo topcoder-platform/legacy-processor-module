@@ -67,9 +67,7 @@ const consumer = new Kafka.GroupConsumer(getKafkaOptions());
 const handleMessages = (messageSet, topic, partition, submissionService) =>
   Promise.each(messageSet, m => {
     const message = m.message.value ? m.message.value.toString('utf8') : null;
-    const messageInfo = `Topic: ${topic}; Partition: ${partition}; Offset: ${
-      m.offset
-    }; Message: ${message}.`;
+    const messageInfo = `Topic: ${topic}; Partition: ${partition}; Offset: ${m.offset}; Message: ${message}.`;
     logger.info(`Handle Kafka event message; ${messageInfo}`);
 
     if (!message) {
@@ -94,9 +92,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
 
     if (messageJSON.topic !== topic) {
       logger.error(
-        `Skipped the message topic "${
-          messageJSON.topic
-        }" doesn't match the Kafka topic ${topic}.`
+        `Skipped the message topic "${messageJSON.topic}" doesn't match the Kafka topic ${topic}.`
       );
       // ignore the message
       return;
@@ -119,9 +115,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         errorLog.error(err);
 
         logger.debug(
-          `Handling failed message; max retry count ${
-            config.MESSAGE_RETRY_COUNT
-          }`
+          `Handling failed message; max retry count ${config.MESSAGE_RETRY_COUNT}`
         );
 
         if (
@@ -131,16 +125,12 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
           logger.error(err);
 
           logger.debug(
-            `Error after processing the message ${
-              config.MESSAGE_RETRY_COUNT
-            } times, committing offset and sending message to error topic`
+            `Error after processing the message ${config.MESSAGE_RETRY_COUNT} times, committing offset and sending message to error topic`
           );
-
-          err['metadata'] = messageJSON;
 
           logger.debug(`sending error to error module`);
           logger.debug(err);
-          errorLog.error(err);
+          errorLog.error(err, messageJSON);
 
           consumer.commitOffset({
             topic,
