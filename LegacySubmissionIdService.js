@@ -1081,7 +1081,7 @@ async function getChallengePhaseId(ctx, challengeId, phaseId) {
         `null or empty result for get phaseId: challengeId ${challengeId} and phase name ${phaseName}`
       );
     }
-    return Number(result[0].project_phase_id);
+    return Number(result[0][0]);
   } catch (e) {
     logger.error(e);
     throw e;
