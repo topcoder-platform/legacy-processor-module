@@ -512,8 +512,8 @@ async function addSubmission(
   const ctx = new InformixContext(dbOpts);
 
   try {
-    phaseId = getChallengePhaseId(challengeId, phaseId);
     await ctx.begin();
+    phaseId = getChallengePhaseId(ctx, challengeId, phaseId);
 
     const [
       resourceId,
@@ -894,10 +894,10 @@ async function updateUpload(
   const ctx = new InformixContext(dbOpts);
 
   try {
-    phaseId = getChallengePhaseId(challengeId, phaseId);
     await ctx.begin();
     let sql;
     let params;
+    phaseId = getChallengePhaseId(ctx, challengeId, phaseId);
 
     if (submissionId > 0) {
       sql = QUERY_UPDATE_UPLOAD_BY_SUBMISSION_ID;
@@ -1053,11 +1053,12 @@ async function getSubTrack(challengeId) {
 
 /**
  * Get submission phase id
+ * @param {Object} DB connection
  * @param {Number} challengeId challenge id
  * @param {Any} phaseId phaseid
  * @returns {Number} phase id
  */
-async function getChallengePhaseId(challengeId, phaseId) {
+async function getChallengePhaseId(ctx, challengeId, phaseId) {
   if (!isUuid(phaseId)) {
     // already legacy phaseId
     return phaseId;
@@ -1066,7 +1067,6 @@ async function getChallengePhaseId(challengeId, phaseId) {
   if (!phaseName) {
     logger.error(`Challenge: ${challengeId}, unable to get phase name for phaseId ${phaseId}`);
   }
-  const ctx = new InformixContext(dbOpts);
   try {
     const result = await ctx.query(QUERY_GET_PHASEID, {
       challengeId,
