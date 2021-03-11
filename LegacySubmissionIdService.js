@@ -513,7 +513,7 @@ async function addSubmission(
 
   try {
     await ctx.begin();
-    phaseId = getChallengePhaseId(ctx, challengeId, phaseId);
+    phaseId = await getChallengePhaseId(ctx, challengeId, phaseId);
 
     const [
       resourceId,
@@ -897,7 +897,7 @@ async function updateUpload(
     await ctx.begin();
     let sql;
     let params;
-    phaseId = getChallengePhaseId(ctx, challengeId, phaseId);
+    phaseId = await getChallengePhaseId(ctx, challengeId, phaseId);
 
     if (submissionId > 0) {
       sql = QUERY_UPDATE_UPLOAD_BY_SUBMISSION_ID;
@@ -1081,7 +1081,9 @@ async function getChallengePhaseId(ctx, challengeId, phaseId) {
         `null or empty result for get phaseId: challengeId ${challengeId} and phase name ${phaseName}`
       );
     }
-    return Number(result[0][0]);
+    phaseId = Number(result[0][0]);
+    logger.debug(`got phaseId ${phaseId} for challenge ${challengeId}`);
+    return phaseId;
   } catch (e) {
     logger.error(e);
     throw e;
