@@ -33,6 +33,12 @@ const dbOpts = {
   locale: config.DB_LOCALE,
 };
 
+const v5phaseIdNameMap = {
+ "d8a2cdbe-84d1-4687-ab75-78a6a7efdcc8" : "Checkpoint Submission",
+ "3e2afca6-9542-4763-a135-96b33f12c082" : "Final Fix",
+ "6950164f-3c5e-4bdc-abc8-22aaf5a1bd49" : "Submission"
+};
+
 let idUploadGen = new IDGenerator(config.ID_SEQ_UPLOAD);
 let idSubmissionGen = new IDGenerator(config.ID_SEQ_SUBMISSION);
 let componentStateGen = new IDGenerator(config.ID_SEQ_COMPONENT_STATE);
@@ -161,6 +167,10 @@ const QUERY_GET_COMP_RESULT = `select coder_id, placed from informixoltp:long_co
 
 // The query to update placed in "long_comp_result" table
 const QUERY_UPDATE_COMP_RESULT_PLACE = `update informixoltp:long_comp_result set placed = @placed@ where round_id=@roundId@ and coder_id=@userId@`;
+
+// The query to get phaseId from phase name
+const QUERY_GET_PHASEID = `select p.project_phase_id from project_phase p, phase_type_lu ptl
+  where p.project_id = @challengeId@ and p.phase_type_id = ptl.phase_type_id and ptl.name = @phaseName@`;
 
 /**
  * Get resourceId, isAllowMultipleSubmission, phaseTypeId and challengeTypeId
@@ -502,6 +512,7 @@ async function addSubmission(
   const ctx = new InformixContext(dbOpts);
 
   try {
+    phaseId = getChallengePhaseId(challengeId, phaseId);
     await ctx.begin();
 
     const [
@@ -883,6 +894,7 @@ async function updateUpload(
   const ctx = new InformixContext(dbOpts);
 
   try {
+    phaseId = getChallengePhaseId(challengeId, phaseId);
     await ctx.begin();
     let sql;
     let params;
@@ -1037,6 +1049,52 @@ async function getSubTrack(challengeId) {
   } catch (err) {
     handleAxiosError(err, 'Challenge Details API');
   }
+}
+
+/**
+ * Get submission phase id
+ * @param {Number} challengeId challenge id
+ * @param {Any} phaseId phaseid
+ * @returns {Number} phase id
+ */
+async function getChallengePhaseId(challengeId, phaseId) {
+  if (!isUuid(phaseId)) {
+    // already legacy phaseId
+    return phaseId;
+  }
+  const phaseName = _.get(v5phaseIdNameMap, phaseId, null);
+  if (!phaseName) {
+    logger.error(`Challenge: ${challengeId}, unable to get phase name for phaseId ${phaseId}`);
+  }
+  const ctx = new InformixContext(dbOpts);
+  try {
+    const result = await ctx.query(QUERY_GET_PHASEID, {
+      challengeId,
+      phaseName
+    });
+    logger.debug(
+      `Get phaseId for Challenge: ${challengeId} and phaseName ${phaseName}: ${JSON.stringify(result)}`
+    );
+
+    if (!_.isArray(result) || _.isEmpty(result)) {
+      throw new Error(
+        `null or empty result for get phaseId: challengeId ${challengeId} and phase name ${phaseName}`
+      );
+    }
+    return Number(result[0].project_phase_id);
+  } catch (e) {
+    logger.error(e);
+    throw e;
+  }
+}
+
+/**
+ * Test if the id is UUID
+ * @param {String} id the id
+ * @returns {Boolean} true if it's a uuid
+ */
+function isUuid (id) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
 }
 
 module.exports = {
