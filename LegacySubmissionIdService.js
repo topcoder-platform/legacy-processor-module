@@ -66,6 +66,18 @@ const QUERY_DELETE_UPLOAD = `update upload set upload_status_id =${
 }
   where project_id=@challengeId@ and resource_id=@resourceId@ and upload_id <> @uploadId@`;
 
+// The query by id to mark submission as "deleted" in submission table
+const QUERY_DELETE_SUBMISSION_BY_ID = `update submission set submission_status_id =${
+  constant.SUBMISSION_STATUS['Deleted']
+}
+   where submission_id=@submissionId@`;
+
+// The query by id to mark upload as "deleted" in upload table
+const QUERY_DELETE_UPLOAD_BY_ID = `update upload set upload_status_id =${
+  constant.UPLOAD_STATUS['Deleted']
+}
+  where upload_id=@uploadId@`;
+
 // The query to get challenge properties
 const QUERY_GET_CHALLENGE_PROPERTIES = `select r.resource_id, pi28.value, pp.phase_type_id, pcl.project_type_id
   from project p, project_category_lu pcl, resource r, project_phase pp, outer project_info pi28
@@ -73,6 +85,8 @@ const QUERY_GET_CHALLENGE_PROPERTIES = `select r.resource_id, pi28.value, pp.pha
   and r.user_id = @userId@ and r.resource_role_id = @resourceRoleId@ and p.project_id = pp.project_id
   and pp.project_phase_id = @phaseId@ and p.project_id = pi28.project_id
   and pi28.project_info_type_id = 28 and p.project_id = @challengeId@`;
+
+const QUERY_GET_SUBMISSION_DETAILS = `select upload_id from submission where submission_id=@submissionId@`;
 
 // The query to update url in "upload" table
 const QUERY_UPDATE_UPLOAD_BY_SUBMISSION_ID = `update upload set url = @url@ where
@@ -227,6 +241,32 @@ async function getMMChallengeProperties(ctx, challengeId, userId) {
     if (!_.isArray(result) || _.isEmpty(result)) {
       throw new Error(
         `null or empty result get mm challenge properties for : challenge id ${challengeId}, user id ${userId}`
+      );
+    }
+    return result[0];
+  } catch (e) {
+    logger.error(e);
+    throw e;
+  }
+}
+
+/**
+ * @param {InformixContext} ctx informix db context
+ * @param submissionId submission id
+ * @return {Array} [uploadId]
+ */
+async function getSubmissionDetails(ctx, submissionId) {
+  try {
+    const result = await ctx.query(QUERY_GET_SUBMISSION_DETAILS, {
+      submissionId
+    });
+    logger.debug(
+      `Submission details for: ${submissionId} are: ${JSON.stringify(result)}`
+    );
+
+    if (!_.isArray(result) || _.isEmpty(result)) {
+      throw new Error(
+        `null or empty result get Submission properties for: submissionId ${submissionId}`
       );
     }
     return result[0];
@@ -623,6 +663,41 @@ async function addSubmission(
     await ctx.commit();
     await patchSubmission(newSubmissionId, patchObject);
     return patchObject;
+  } catch (e) {
+    await ctx.rollback();
+    throw e;
+  } finally {
+    await ctx.end();
+  }
+}
+
+/**
+ * Delete submission id
+ * @param {String} id id of submission to delete
+ * @return {Promise<void>}
+ */
+async function deleteSubmission(id) {
+  const ctx = new InformixContext(dbOpts);
+
+  try {
+    await ctx.begin();
+
+    const [ uploadId ] = await getSubmissionDetails(ctx, id);
+
+    let params = {
+      uploadId
+    };
+
+    logger.debug(`Delete upload by id with params: ${JSON.stringify(params)}`);
+    await ctx.query(QUERY_DELETE_UPLOAD_BY_ID, params);
+
+    params = {
+      submissionId: id
+    };
+
+    logger.debug(`Delete submission by id with params: ${JSON.stringify(params)}`);
+    await ctx.query(QUERY_DELETE_SUBMISSION_BY_ID, params);
+    await ctx.commit();
   } catch (e) {
     await ctx.rollback();
     throw e;
@@ -1041,6 +1116,7 @@ async function getSubTrack(challengeId) {
 
 module.exports = {
   addSubmission,
+  deleteSubmission,
   addMMSubmission,
   updateUpload,
   updateProvisionalScore,
