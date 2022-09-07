@@ -6,7 +6,6 @@ const config = require('config');
 const Kafka = require('no-kafka');
 const healthcheck = require('topcoder-healthcheck-dropin');
 const logger = require('./common/logger');
-const errorLogger = require('topcoder-error-logger');
 const busApi = require('topcoder-bus-api-wrapper');
 const _ = require('lodash');
 
@@ -28,7 +27,6 @@ errorConfigObj.LOG_LEVEL = config.LOG_LEVEL;
 errorConfigObj.KAFKA_MESSAGE_ORIGINATOR = config.KAFKA_MESSAGE_ORIGINATOR;
 errorConfigObj.POST_KAFKA_ERROR_ENABLED = true;
 
-const errorLog = errorLogger(errorConfigObj);
 const busApiClient = busApi(busConfigObj);
 
 /**
@@ -112,10 +110,9 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
       .catch(err => {
         logger.error(`Failed to handle ${messageInfo}: ${err.message}`);
         logger.debug(err);
-        errorLog.error(err);
 
         logger.debug(
-          `Handling failed message; max retry count ${config.MESSAGE_RETRY_COUNT}`
+          `Handling failed message; max retry count ${
         );
 
         if (
@@ -129,7 +126,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
           );
 
           logger.debug(`sending error to error module`);
-          logger.debug(err);
+          logger.error(err);
           errorLog.error(err, messageJSON);
 
           consumer.commitOffset({
