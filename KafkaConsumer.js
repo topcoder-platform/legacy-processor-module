@@ -127,7 +127,6 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
 
           logger.debug(`sending error to error module`);
           logger.error(err);
-          errorLog.error(err, messageJSON);
 
           consumer.commitOffset({
             topic,
