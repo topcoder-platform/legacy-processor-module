@@ -112,7 +112,7 @@ const handleMessages = (messageSet, topic, partition, submissionService) =>
         logger.debug(err);
 
         logger.debug(
-          `Handling failed message; max retry count ${
+          `Handling failed message; max retry count`
         );
 
         if (
