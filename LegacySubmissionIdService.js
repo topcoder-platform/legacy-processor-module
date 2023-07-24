@@ -1108,7 +1108,7 @@ async function getSubTrack(challengeId) {
     const result = await Axios.get(challengeURL, options);
 
     // use _.get to avoid access with undefined object
-    return _.get(result.data, 'result.content.subTrack');
+    return _.get(result.data[0], 'legacy.subTrack');
   } catch (err) {
     handleAxiosError(err, 'Challenge Details API');
   }
